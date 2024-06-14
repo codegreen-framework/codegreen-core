@@ -4,7 +4,27 @@ import pandas as pd
 from datetime import datetime, timedelta
 from entsoe import EntsoePandasClient as entsoePandas
 
+
+# constant values 
+renewableSources = ["Biomass","Geothermal", "Hydro Pumped Storage", "Hydro Run-of-river and poundage",
+                        "Hydro Water Reservoir", "Marine", "Other renewable", "Solar", "Waste", "Wind Offshore", "Wind Onshore"]
+windSolarOnly = ["Solar", "Wind Offshore", "Wind Onshore"]
+nonRenewableSources = [ "Fossil Brown coal/Lignite", "Fossil Coal-derived gas", "Fossil Gas",
+                           "Fossil Hard coal", "Fossil Oil", "Fossil Oil shale", "Fossil Peal", "Nuclear", "Other"]
+energy_type = {
+    "Wind":["Wind Offshore", "Wind Onshore"],
+    "Solar":["Solar"],
+    "Nuclear": ["Nuclear"],
+    "Hydroelectricity":[ "Hydro Pumped Storage", "Hydro Run-of-river and poundage", "Hydro Water Reservoir"],
+    "Geothermal":["Geothermal"],
+    "Natural Gas": ["Fossil Coal-derived gas", "Fossil Gas"],
+    "Petroleum":["Fossil Oil", "Fossil Oil shale"],
+    "Coal":["Fossil Brown coal/Lignite","Fossil Hard coal","Fossil Peal"],
+    "Biomass":["Biomass"]
+}
+
 def get_API_token() -> str:
+  """ reads the ENTOSE api token required to access data from the portal. must be defined in the config file"""
   return Config.get("ENTSOE_token")
 
 def refine_data(options, data1):
@@ -174,8 +194,7 @@ def get_actual_energy_production(country, start, end, interval60=False) -> pd.Da
     The data is sourced from the ENTSOE APIs and subsequently refined. 
     To obtain data in 60-minute intervals (if not already available), set 'interval60' to True
     """
-    options = {"country": country, "start": start,
-               "end": end, "interval60": interval60}
+    options = {"country": country, "start": start, "end": end, "interval60": interval60}
     # get actual generation data per production type and convert it into 60 min interval if required
     totalRaw = entsoe_get_actual_generation(options)
     total = totalRaw["data"]
@@ -196,13 +215,13 @@ def get_actual_energy_production(country, start, end, interval60=False) -> pd.Da
     return table,duration
 
 
-def get_actual_percent_renewable(country, start, end, interval60=False) -> pd.DataFrame:
-    """Returns time series data containing the percentage of energy generated from renewable sources for the specified country within the selected time period. 
+def get_actual_production_percentage(country, start, end, interval60=False) -> pd.DataFrame:
+    """Returns time series data containing the percentage of energy generated from various sources for the specified country within the selected time period. 
+    It also includes the percentage of energy from renewable and non renewable sources.
     The data is sourced from the ENTSOE APIs and subsequently refined. 
     To obtain data in 60-minute intervals (if not already available), set 'interval60' to True
     """
-    options = {"country": country, "start": start,
-               "end": end, "interval60": interval60}
+    options = {"country": country, "start": start,"end": end, "interval60": interval60}
     # get actual generation data per production type and convert it into 60 min interval if required
     totalRaw = entsoe_get_actual_generation(options)
     total = totalRaw["data"]
@@ -213,11 +232,6 @@ def get_actual_percent_renewable(country, start, end, interval60=False) -> pd.Da
     else:
         table = total
     # finding the percent renewable
-    renewableSources = ["Geothermal", "Hydro Pumped Storage", "Hydro Run-of-river and poundage",
-                        "Hydro Water Reservoir", "Marine", "Other renewable", "Solar", "Waste", "Wind Offshore", "Wind Onshore","Biomass"]
-    windSolarOnly = ["Solar", "Wind Offshore", "Wind Onshore"]
-    nonRenewableSources = ["Fossil Brown coal/Lignite", "Fossil Coal-derived gas", "Fossil Gas",
-                           "Fossil Hard coal", "Fossil Oil", "Fossil Oil shale", "Fossil Peal", "Nuclear", "Other"]
     allCols = table.columns.tolist()
     # find out which columns are present in the data out of all the possible columns in both the categories
     renPresent = list(set(allCols).intersection(renewableSources))
@@ -229,15 +243,26 @@ def get_actual_percent_renewable(country, start, end, interval60=False) -> pd.Da
     table["nonRenewableTotal"] = table[nonRenPresent].sum(axis=1)
     table["total"] = table["nonRenewableTotal"] + table["renewableTotal"]
     # calculate percent renewable
-    table["percentRenewable"] = (
-        table["renewableTotal"] / table["total"]) * 100
+    table["percentRenewable"] = (table["renewableTotal"] / table["total"]) * 100
     # refine percentage values : replacing missing values with 0 and converting to integer
     table['percentRenewable'].fillna(0, inplace=True)
     table["percentRenewable"] = table["percentRenewable"].round().astype(int)
-    table["percentRenewableWS"] = (
-        table["renewableTotalWS"] / table["total"]) * 100
+    table["percentRenewableWS"] = (table["renewableTotalWS"] / table["total"]) * 100
     table['percentRenewableWS'].fillna(0, inplace=True)
     table["percentRenewableWS"] = table["percentRenewableWS"].round().astype(int)
+
+    # individual energy source percentage calculation 
+    allAddkeys = ["Wind","Solar","Nuclear","Hydroelectricity","Geothermal","Natural Gas","Petroleum","Coal","Biomass"]
+    for ky in allAddkeys:
+        keys_available =  list(set(allCols).intersection(energy_type[ky]))   
+        #print(keys_available)  
+        fieldName = ky+"_per"  
+        # print(fieldName)
+        table[fieldName] = table[keys_available].sum(axis=1)
+        table[fieldName] = (table[fieldName]/table["total"])*100
+        table[fieldName].fillna(0, inplace=True)
+        table[fieldName] =  table[fieldName].astype(int)
+    
     return table
 
 
@@ -269,9 +294,11 @@ def get_forecast_percent_renewable(country, start, end) -> pd.DataFrame:
     windsolar["posix_timestamp"] = (windsolar['startTimeUTC'].astype(int) // 10**9)
     return windsolar
 
-
 def get_current_date_entsoe_format():
     return  datetime.now().replace(minute=0, second=0, microsecond=0).strftime('%Y%m%d%H%M')
 
 def add_hours_to_entsoe_data(date_str,hours_to_add):
     return (datetime.strptime(date_str, '%Y%m%d%H%M') + timedelta(hours=hours_to_add)).strftime('%Y%m%d%H%M')
+
+def convert_date_to_entsoe_format(dt:datetime):
+    return  dt.replace(minute=0, second=0, microsecond=0).strftime('%Y%m%d%H%M')
