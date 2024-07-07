@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0",
   "requests",
   "pandas",
   "numpy",
-  "entsoe-py"
+  "entsoe-py",
   "codecarbon"
 ]
 

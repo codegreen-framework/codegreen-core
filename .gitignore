@@ -162,3 +162,4 @@ cython_debug/
 #.idea/
 
 .codegreencore.config
+dev-notes.txt

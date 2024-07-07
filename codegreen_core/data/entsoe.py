@@ -1,5 +1,4 @@
 from ..utils.config import Config
-
 import pandas as pd
 from datetime import datetime, timedelta
 from entsoe import EntsoePandasClient as entsoePandas
@@ -22,6 +21,8 @@ energy_type = {
     "Coal":["Fossil Brown coal/Lignite","Fossil Hard coal","Fossil Peal"],
     "Biomass":["Biomass"]
 }
+
+# helper methods
 
 def get_API_token() -> str:
   """ reads the ENTOSE api token required to access data from the portal. must be defined in the config file"""
@@ -189,31 +190,18 @@ def convert_to_60min_interval(rawData):
         newGroupedData["startTimeUTC"] = new_timestamps
         return newGroupedData
 
-def get_actual_energy_production(country, start, end, interval60=False) -> pd.DataFrame:
-    """Returns time series data containing the actual generation per production without any additional fields in the dataframe
-    The data is sourced from the ENTSOE APIs and subsequently refined. 
-    To obtain data in 60-minute intervals (if not already available), set 'interval60' to True
-    """
-    options = {"country": country, "start": start, "end": end, "interval60": interval60}
-    # get actual generation data per production type and convert it into 60 min interval if required
-    totalRaw = entsoe_get_actual_generation(options)
-    total = totalRaw["data"]
-    duration = totalRaw["duration"]
-    if options["interval60"] == True and totalRaw["duration"] != 60.0:
-        table = convert_to_60min_interval(totalRaw)
-        duration = 60
-    else:
-        table = total
+# more helper methods 
 
-    # new columns 
-    # startTime,endTime    
-    table.rename(columns={'startTimeUTC': 'startTime'}, inplace=True)
-    table['startTime'] = pd.to_datetime(table['startTime'], format='%Y%m%d%H%M')
-    table['endTime'] = table['startTime'] + pd.Timedelta(minutes=duration)
-    table['startTime'] =   table['startTime'].dt.strftime('%Y%m%d%H%M')
-    table['endTime'] =   table['endTime'].dt.strftime('%Y%m%d%H%M') 
-    return table,duration
+def get_current_date_entsoe_format():
+    return  datetime.now().replace(minute=0, second=0, microsecond=0).strftime('%Y%m%d%H%M')
 
+def add_hours_to_entsoe_data(date_str,hours_to_add):
+    return (datetime.strptime(date_str, '%Y%m%d%H%M') + timedelta(hours=hours_to_add)).strftime('%Y%m%d%H%M')
+
+def convert_date_to_entsoe_format(dt:datetime):
+    return  dt.replace(minute=0, second=0, microsecond=0).strftime('%Y%m%d%H%M')
+
+# the main methods 
 
 def get_actual_production_percentage(country, start, end, interval60=False) -> pd.DataFrame:
     """Returns time series data containing the percentage of energy generated from various sources for the specified country within the selected time period. 
@@ -294,11 +282,3 @@ def get_forecast_percent_renewable(country, start, end) -> pd.DataFrame:
     windsolar["posix_timestamp"] = (windsolar['startTimeUTC'].astype(int) // 10**9)
     return windsolar
 
-def get_current_date_entsoe_format():
-    return  datetime.now().replace(minute=0, second=0, microsecond=0).strftime('%Y%m%d%H%M')
-
-def add_hours_to_entsoe_data(date_str,hours_to_add):
-    return (datetime.strptime(date_str, '%Y%m%d%H%M') + timedelta(hours=hours_to_add)).strftime('%Y%m%d%H%M')
-
-def convert_date_to_entsoe_format(dt:datetime):
-    return  dt.replace(minute=0, second=0, microsecond=0).strftime('%Y%m%d%H%M')
