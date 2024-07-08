@@ -14,7 +14,7 @@ def get_country_metadata():
     - carbon_intensity_method : this is the methodology to be used to calculate the CI values based on the energy fetched
       - the current methodologies supported are described in "carbon_intensity.py" file
   """
-  with il.open_text(dt,"country_metadata.json") as json_file:
+  with il.open_text(dt,"country_list.json") as json_file:
     data = json.load(json_file)
     return data
 
