@@ -163,3 +163,4 @@ cython_debug/
 
 .codegreencore.config
 dev-notes.txt
+tests_manual/
