@@ -1,4 +1,6 @@
 import pandas as pd
+from datetime import datetime
+
 from ..utils.message import Message,CodegreenDataError
 from .  import metadata as meta  
 from . import entsoe as et
@@ -7,14 +9,21 @@ from . import carbon_intensity as ct
 def energy(country,start_time,end_time,type="historical")-> pd.DataFrame:
   """ To get energy data
   """
+  if not isinstance(country, str):
+    raise ValueError("Invalid country")
+  if not isinstance(start_time, datetime):
+    raise ValueError("Invalid discount rate")
+  if type not in ['historical', 'forecast']:
+    raise ValueError(Message.INVALID_ENERGY_TYPE)
+  
   e_source = meta.get_country_energy_source(country)
   if e_source=="ENTSOE" :
     if type == "historical":
       return et.get_actual_production_percentage(country,start_time,end_time)
     elif type == "forecast":
       return et.get_forecast_percent_renewable(country,start_time,end_time)
-    else:
-      raise CodegreenDataError(Message.INVALID_ENERGY_TYPE)
+  else:
+    raise CodegreenDataError(Message.NO_ENERGY_SOURCE)
   return None
 
 def carbon_intensity(country,start_time,end_time)-> pd.DataFrame:
