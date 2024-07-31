@@ -75,8 +75,8 @@ The core business logic of codegreen
     - `ci_eu_commission`: Based on N. Scarlat, M. Prussi, and M. Padella, ‘Quantification of the carbon intensity of electricity produced and used in Europe’, Applied Energy, vol. 305, p. 117901, Jan. 2022, doi: 10.1016/j.apenergy.2021.117901 [Link](https://doi.org/10.1016/j.apenergy.2021.117901)
   - If the energy mix percentage is not available, the method returns  the global average value for that country
 - 
-## `codegreen_core.loadshift`
-- `predict_optimal_time()` : 
+## `codegreen_core.tool`
+- `predict_optimal_job_time()` : 
   - Returns the optimal time to start the job based on the inputs provided
   - Params:
   - The process : 

@@ -1,4 +1,4 @@
-from .time import predict_optimal_time
+from .loadshift_time import predict_optimal_time
 
 def predict_optimal_location(
     forecast_data,

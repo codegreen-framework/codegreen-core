@@ -1,12 +1,12 @@
 from datetime import datetime
 import pandas as pd
 # from ..utils.message import Message, CodegreenDataError
-from . import time as t
-from . import location as l
+from . import loadshift_time as t
+from . import loadshift_location as l
 from . import carbon_emission as ce
 
 
-def predict_optimal_time(
+def predict_optimal_job_time(
     country: str,
     estimated_runtime_hours: int,
     estimated_runtime_minutes: int,

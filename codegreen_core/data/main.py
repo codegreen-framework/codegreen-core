@@ -11,8 +11,10 @@ def energy(country,start_time,end_time,type="historical")-> pd.DataFrame:
   """
   if not isinstance(country, str):
     raise ValueError("Invalid country")
-  if not isinstance(start_time, datetime):
-    raise ValueError("Invalid discount rate")
+  if not isinstance(start_time,(datetime,str)):
+    raise ValueError("Invalid date")
+  if not isinstance(end_time, (datetime,str)):
+    raise ValueError("Invalid date")
   if type not in ['historical', 'forecast']:
     raise ValueError(Message.INVALID_ENERGY_TYPE)
   
@@ -36,10 +38,11 @@ def carbon_intensity(country,start_time,end_time)-> pd.DataFrame:
     ci_values = energy_data.apply(lambda row: ct.calculate_carbon_intensity(row.to_dict()),axis=1)
     ci = pd.DataFrame(ci_values.tolist())
     ci = pd.concat([ci,energy_data],axis=1)
+    ci["ci_default"] = ci["ci_ipcc_lifecycle_mean"]
     return ci
   else:
     time_series = pd.date_range(start=start_time, end=end_time, freq='H')
     df = pd.DataFrame(time_series, columns=['startTimeUTC'])
-    df["ci_country_default"] = meta.get_default_ci_value(country)
+    df["ci_default"] = meta.get_default_ci_value(country)
     # TODO check same format for both cases
     return df
