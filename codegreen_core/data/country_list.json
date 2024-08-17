@@ -1,177 +1,181 @@
 {
-  "AT":{
-    "country":"Austria",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
+  "available": {
+    "AT": {
+      "country": "Austria",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "BA": {
+      "country": "Bosnia and Herzegovina",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "BE": {
+      "country": "Belgium",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "BG": {
+      "country": "Bulgaria",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "CH": {
+      "country": "Switzerland",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "CZ": {
+      "country": "Czech Republic",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "DE": {
+      "country": "Germany",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "DK": {
+      "country": "Germany",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "EE": {
+      "country": "Estonia",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "ES": {
+      "country": "Spain",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "FI": {
+      "country": "Finland",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "FR": {
+      "country": "France",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "GR": {
+      "country": "Greece",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "HR": {
+      "country": "Croatia",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "HU": {
+      "country": "Hungary",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "IE": {
+      "country": "Ireland",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "IT": {
+      "country": "Italy",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "LT": {
+      "country": "Lithuania",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "LU": {
+      "country": "Luxembourg",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "LV": {
+      "country": "Latvia",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "ME": {
+      "country": "Montenegro",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "NL": {
+      "country": "Netherlands",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "NO": {
+      "country": "Norway",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "MK": {
+      "country": "Republic of North Macedonia",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "PL": {
+      "country": "Poland",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "PT": {
+      "country": "Portugal",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "RO": {
+      "country": "Romania",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "RS": {
+      "country": "Serbia",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "SE": {
+      "country": "Sweden",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "SI": {
+      "country": "Slovenia",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "SK": {
+      "country": "Slovak Republic",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    }
   },
-  "AL":{
-    "country":"Albania",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "BA":{
-    "country":"Bosnia and Herzegovina",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "BE":{
-    "country":"Belgium",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "BG":{
-    "country":"Bulgaria",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "CH":{
-    "country":"Switzerland",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "CY":{
-    "country":"Cyprus",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "CZ":{
-    "country":"Czech Republic",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "DE":{
-    "country":"Germany",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "DK":{
-    "country":"Germany",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "EE":{
-    "country":"Estonia",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "ES":{
-    "country":"Spain",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "FI":{
-    "country":"Finland",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "FR":{
-    "country":"France",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "GR":{
-    "country":"Greece",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "HR":{
-    "country":"Croatia",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "HU":{
-    "country":"Hungary",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "IE":{
-    "country":"Ireland",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "IS":{
-    "country":"Iceland",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "IT":{
-    "country":"Italy",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "LT":{
-    "country":"Lithuania",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "LU":{
-    "country":"Luxembourg",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "LV":{
-    "country":"Latvia",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "ME":{
-    "country":"Montenegro",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "NI":{
-    "country":"Northern Ireland",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "NL":{
-    "country":"Netherlands",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "NO":{
-    "country":"Norway",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "MK":{
-    "country":"Republic of North Macedonia",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "PL":{
-    "country":"Poland",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "PT":{
-    "country":"Portugal",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "RO":{
-    "country":"Romania",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "RS":{
-    "country":"Serbia",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "SE":{
-    "country":"Sweden",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "SI":{
-    "country":"Slovenia",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
-  },
-  "SK":{
-    "country":"Slovak Republic",
-    "energy_source":"ENTSOE",
-    "carbon_intensity_method":"ipcc"
+  "not_available":{
+    "AL": {
+      "country": "Albania",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "NI": {
+      "country": "Northern Ireland",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "CY": {
+      "country": "Cyprus",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    },
+    "IS": {
+      "country": "Iceland",
+      "energy_source": "ENTSOE",
+      "carbon_intensity_method": "ipcc"
+    }
   }
 }

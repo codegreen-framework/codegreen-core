@@ -16,7 +16,7 @@ def get_country_metadata():
   """
   with il.open_text(dt,"country_list.json") as json_file:
     data = json.load(json_file)
-    return data
+    return data["available"]
 
 def get_country_energy_source(country_code):
   """
