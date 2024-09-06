@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from entsoe import EntsoePandasClient as entsoePandas
 
+import traceback
 
 # constant values 
 renewableSources = ["Biomass","Geothermal", "Hydro Pumped Storage", "Hydro Run-of-river and poundage",
@@ -254,31 +255,36 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> p
     return table
 
 
-def get_forecast_percent_renewable(country, start, end) -> pd.DataFrame:
-    """Returns time series data comprising the forecast of the percentage of energy generated from 
+def get_forecast_percent_renewable(country:str, start:datetime, end:datetime) -> pd.DataFrame:
+    """Returns time series data  comprising the forecast of the percentage of energy generated from 
     renewable sources (specifically, wind and solar) for the specified country within the selected time period. 
-    The data source is the  ENTSOE APIs and involves combining data from 2 APIs : total forecast, wind and solar forecast.
-    The time interval is 60 min
+    - The data source is the  ENTSOE APIs and involves combining data from 2 APIs : total forecast, wind and solar forecast.
+    - The time interval is 60 min
+    - the data frame includes : startTimeUTC, totalRenewable,total,percent_renewable,posix_timestamp
     """
-    options = {"country": country, "start": start,
-               "end": end}
-    totalRaw = entsoe_get_total_forecast(options)
-    if totalRaw["duration"] != 60:
-        total = convert_to_60min_interval(totalRaw)
-    else:
-        total = totalRaw["data"]
-    windsolarRaw = entsoe_get_wind_solar_forecast(options)
-    if windsolarRaw["duration"] != 60:
-        windsolar = convert_to_60min_interval(windsolarRaw)
-    else:
-        windsolar = windsolarRaw["data"]
-    windsolar["total"] = total["total"]
-    windsolar["percentRenewable"] = (
-        windsolar['totalRenewable'] / windsolar['total']) * 100
-    windsolar['percentRenewable'].fillna(0, inplace=True)
-    windsolar["percentRenewable"] = windsolar["percentRenewable"].round().astype(int)
-    windsolar = windsolar.rename(columns={'percentRenewable': 'percent_renewable'})
-    windsolar['startTimeUTC'] = pd.to_datetime(windsolar['startTimeUTC'], format='%Y%m%d%H%M')
-    windsolar["posix_timestamp"] = (windsolar['startTimeUTC'].astype(int) // 10**9)
-    return windsolar
-
+    try:
+        start = convert_date_to_entsoe_format(start)
+        end = convert_date_to_entsoe_format(end)
+        options = {"country": country, "start": start,"end": end}
+        totalRaw = entsoe_get_total_forecast(options)
+        if totalRaw["duration"] != 60:
+            total = convert_to_60min_interval(totalRaw)
+        else:
+            total = totalRaw["data"]
+        windsolarRaw = entsoe_get_wind_solar_forecast(options)
+        if windsolarRaw["duration"] != 60:
+            windsolar = convert_to_60min_interval(windsolarRaw)
+        else:
+            windsolar = windsolarRaw["data"]
+        windsolar["total"] = total["total"]
+        windsolar["percentRenewable"] = (windsolar['totalRenewable'] / windsolar['total']) * 100
+        windsolar['percentRenewable'].fillna(0, inplace=True)
+        windsolar["percentRenewable"] = windsolar["percentRenewable"].round().astype(int)
+        windsolar = windsolar.rename(columns={'percentRenewable': 'percent_renewable'})
+        windsolar['startTimeUTC'] = pd.to_datetime(windsolar['startTimeUTC'], format='%Y%m%d%H%M')
+        windsolar["posix_timestamp"] = (windsolar['startTimeUTC'].astype(int) // 10**9)
+        return {"data": windsolar,"data_available":True,"time_interval":60}
+    except Exception as e:
+        print(e)
+        print(traceback.format_exc())
+        return {"data": None,"data_available":False,"error":Exception,"time_interval":60}

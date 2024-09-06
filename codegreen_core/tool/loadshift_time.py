@@ -4,8 +4,105 @@ import numpy as np
 import pandas as pd
 # from greenerai.api.data.utils import Message
 from ..utils.message import Message
+from ..utils.log import time_prediction as log_time_prediction
 from ..data.metadata import get_country_energy_source
 from ..data import  entsoe as e # get_forecast_percent_renewable,get_current_date_entsoe_format,add_hours_to_entsoe_data
+from ..data import energy 
+from ..utils.config import Config
+import redis
+import json
+import traceback
+
+def get_country_key(country_code):
+    return "codegreen_"+country_code
+
+def get_cache_or_update(country, start, deadline):
+    """
+    The cache contains an entry for every country. It holds the country code,
+    the last update time, the timestamp of the last entry and the data time series.
+
+    The function first checks if the requested final time stamp is available, if not
+    it attempts to pull the data from ENTSOE, if the last update time is at least one hour earlier.
+    """
+    print("get_cache_or_update started")
+    cache = redis.from_url(Config.get("energy_redis_path"))
+    if cache.exists(get_country_key(country)):
+        print("cache has country")
+        json_string = cache.get(get_country_key(country)).decode("utf-8")
+        data_object = json.loads(json_string)
+        last_prediction_time  =  datetime.fromtimestamp(data_object["last_prediction"], tz=timezone.utc) 
+        deadline_time =  deadline.astimezone(timezone.utc) # datetime.strptime("202308201230", "%Y%m%d%H%M").replace(tzinfo=timezone.utc)
+        last_cache_update_time = datetime.fromtimestamp(data_object["last_updated"], tz=timezone.utc) 
+        current_time_plus_one = datetime.now(timezone.utc)+timedelta(hours=-1)
+        # utc_dt = utc_dt.astimezone(timezone.utc)  
+        # print(data_object)
+        if data_object["data_available"] and last_prediction_time > deadline_time:
+            return data_object
+        else:
+            # check if the last update has been at least one hour earlier, 
+            if last_cache_update_time < current_time_plus_one:
+                print("cache must be updated")
+                return pull_data(country, start, deadline)
+            else:
+                return data_object
+    else:
+        print("caches has no country, calling pull_data(country, start, deadline)")
+        return pull_data(country, start, deadline)
+
+
+def pull_data(country, start, end):
+    """Fetches the data from ENTSOE and updated the cache"""
+    print("pull_data function started")
+    try:
+        cache = redis.from_url(Config.get("energy_redis_path"))
+        forecast_data = energy(country,start,end,"forecast")
+        # print(forecast_data)
+        last_update = datetime.now().timestamp()
+        if forecast_data["data_available"]:
+            last_prediction = forecast_data["data"].iloc[-1]["posix_timestamp"]
+        else:
+            last_prediction = pd.Timestamp(datetime.now(), tz="UTC")
+        # print(last_prediction)
+        # forecast_data["data"]["startTimeUTC"] = forecast_data["data"]['startTimeUTC'].dt.strftime('%Y%m%d%H%M').astype("str")
+        df = forecast_data["data"]
+        df['startTimeUTC'] = pd.to_datetime(df['startTimeUTC'])
+        df['startTimeUTC'] = df['startTimeUTC'].dt.strftime('%Y%m%d%H%M').astype("str")
+        cached_object = {
+            "data": df.to_dict(),
+            "time_interval": forecast_data["time_interval"],
+            "data_available": forecast_data["data_available"],
+            "last_updated": int(last_update),
+            "last_prediction": int(last_prediction),
+        }
+        cache.set(get_country_key(country), json.dumps(cached_object))
+        # print(
+        #     "caching object with updated last_update key , result is %s",
+        #     str(cached_object),
+        # )
+        return cached_object
+
+    except Exception as e:
+        print(traceback.format_exc())
+        print(e)
+        return None
+
+def get_energy_data(country,start,end):
+    """
+    get energy data and check if it must be cached based on the options set 
+    """
+    if Config.get("enable_energy_caching")==True: 
+        try :
+            forecast = get_cache_or_update(country, start, end)
+            #print(forecast)
+            forecast_data = pd.DataFrame(forecast["data"])
+            #print("====")
+            #print(forecast_data)
+            return forecast_data
+        except Exception as e :
+            print(traceback.format_exc())
+    else: 
+        forecast =   energy(country,start,end,"forecast")
+        return forecast["data"]
 
 def predict_now(
         country: str,
@@ -16,23 +113,24 @@ def predict_now(
         percent_renewable: int = 50,
 ):
     if criteria == "percent_renewable":
-        e_source = get_country_energy_source(country)
-        if e_source == "ENTSOE":
-          start_time = e.get_current_date_entsoe_format()
-          # print(start_time)
-          end_time = e.add_hours_to_entsoe_data(start_time,24)
-          # print(end_time)
-          energy_data = e.get_forecast_percent_renewable(country,start_time,end_time)
-          # print(energy_data[["percent_renewable","posix_timestamp","startTimeUTC"]])
-          return predict_optimal_time(
-              energy_data,
-              estimated_runtime_hours,
-              estimated_runtime_minutes,
-              percent_renewable,
-              hard_finish_date
-          )
-        else :
-          return default_response(Message.COUNTRY_404)
+        try:
+            start_time = datetime.now()
+            energy_data = get_energy_data(country,start_time,hard_finish_date)
+            # print(energy_data)
+            if energy_data is not None :
+                return predict_optimal_time(
+                    energy_data,
+                    estimated_runtime_hours,
+                    estimated_runtime_minutes,
+                    percent_renewable,
+                    hard_finish_date
+                )
+            else:
+                return default_response(Message.ENERGY_DATA_FETCHING_ERROR)
+        
+        except Exception as e:
+            print(traceback.format_exc())
+            return default_response(Message.ENERGY_DATA_FETCHING_ERROR)
     else:
         return default_response(Message.INVALID_PREDICTION_CRITERIA)
     
@@ -43,57 +141,79 @@ def predict_optimal_time(
     estimated_runtime_minutes: int,
     percent_renewable: int,
     hard_finish_date: datetime.timestamp,
-    granularity: int = 60,
-    request_time : datetime = None,
-):
-    # logging.info("predict_optimal_time function started, data/prediction.py")
-    my_predictions = energy_data
+    request_time : datetime = None
+) -> tuple:
+    """
+    Predicts the optimal time window to run a task based in energy data, run time estimates and renewable energy target.
 
-    # check if data is available
+    :param energy_data: A DataFrame containing the energy data including startTimeUTC, totalRenewable,total,percent_renewable,posix_timestamp
+    :param estimated_runtime_hours: The estimated runtime in hours
+    :param estimated_runtime_minutes: The estimated runtime in minutes 
+    :param percent_renewable: The minimum percentage of renewable energy desired during the runtime
+    :param hard_finish_date: The latest possible finish time for the task
+    :param request_time: The time at which the prediction is requested. Defaults to None, then the current time is used
+
+    :return: Tuple[timestamp, message, average_percent_renewable]
+    :rtype: tuple
+    """
+
+    # print(type(hard_finish_date))
+    # print(type(request_time))
+    granularity =  60 # assuming that the granularity of time series is 60 minutes
+    
+    #  ============ data validation   =========
+
+    if not isinstance(hard_finish_date,datetime):
+        raise ValueError("Invalid hard_finish_date. it must be a datetime object")
+
+    if request_time is not None:
+        if not isinstance(request_time,datetime):
+            raise ValueError("Invalid request_time. it must be a datetime object")
     if energy_data is None:
-        return default_response(Message.NO_DATA)
-
+        return default_response(Message.NO_DATA,request_time)
     if percent_renewable <= 0:
-        return default_response(Message.NEGATIVE_PERCENT_RENEWABLE)
+        return default_response(Message.NEGATIVE_PERCENT_RENEWABLE,request_time)
+    if estimated_runtime_hours <= 0:
+        # since energy data is for 60 min interval, it does not make sense to optimize jobs less than an hour
+        return default_response(Message.INVALID_DATA,request_time)
+    if estimated_runtime_minutes < 0:
+        # min val can be 0 
+        return default_response(Message.INVALID_DATA,request_time)
+    
     total_runtime_in_minutes = estimated_runtime_hours * 60 + estimated_runtime_minutes
 
     if total_runtime_in_minutes <= 0:
-        return default_response(Message.ZERO_OR_NEGATIVE_RUNTIME)
+        return default_response(Message.ZERO_OR_NEGATIVE_RUNTIME,request_time)
         
     if request_time is None:
       # request time will be the current time 
       # dial back by 60 minutes to avoid waiting unnecessarily for the next full quarterhour.
-      current_time = (
-        datetime.now(timezone.utc) - timedelta(minutes=granularity)
-      ).timestamp()
-      estimated_finish_time = (
-        datetime.now(timezone.utc) + timedelta(minutes=total_runtime_in_minutes)
-      ).timestamp()
+      current_time = int((datetime.now(timezone.utc) - timedelta(minutes=granularity)).timestamp())
+      estimated_finish_time = int((datetime.now(timezone.utc) + timedelta(minutes=total_runtime_in_minutes)).timestamp())      
     else :
       # else, the current time value is the request time converted to utc time stamp
       request_time_utc =  request_time.astimezone(tz.tzutc())
+      current_time = (request_time_utc - timedelta(minutes=granularity)).timestamp()
+      estimated_finish_time = (request_time_utc + timedelta(minutes=total_runtime_in_minutes)).timestamp()
 
-      current_time = (
-          request_time_utc - timedelta(minutes=granularity) 
-      ).timestamp()
-      estimated_finish_time = (
-        request_time_utc + timedelta(minutes=total_runtime_in_minutes)
-      ).timestamp()
+    #print(estimated_finish_time)
+    #print(type(estimated_finish_time))
+    #print(estimated_finish_time, int(hard_finish_date.timestamp()))
+    if estimated_finish_time >= int(hard_finish_date.timestamp()):
+        return default_response(Message.RUNTIME_LONGER_THAN_DEADLINE_ALLOWS,request_time)
 
-    hard_finish_date_utc = hard_finish_date.astimezone(tz.tzutc()).timestamp()
-    
-    if estimated_finish_time >= hard_finish_date_utc:
-        return default_response(Message.RUNTIME_LONGER_THAN_DEADLINE_ALLOWS)
+
+    # ========== the predication part ===========
+    # this is to make the old code from the web repo compatible with the new one. TODO refine it 
+    my_predictions = energy_data
     
     # Reduce data to the relevant time frame
     my_predictions = my_predictions[my_predictions["posix_timestamp"] >= current_time]
-    my_predictions = my_predictions[
-        my_predictions["posix_timestamp"] <= hard_finish_date
-    ]
+    my_predictions = my_predictions[my_predictions["posix_timestamp"] <= hard_finish_date]
 
     # Possible that data has not been reported
     if my_predictions.shape[0] == 0:
-        return default_response(Message.NO_DATA)
+        return default_response(Message.NO_DATA,request_time)
 
     my_predictions = my_predictions.reset_index()
 
@@ -116,8 +236,8 @@ def predict_optimal_time(
     # index of starting time fullfilling the requirements
     time_slot = my_predictions[column_name].ge(time_units).argmax() - (time_units - 1)
 
-    #logging.info("time_slot is: " + str(time_slot))
-    #logging.info("time_slot is: " + str(time_slot))
+    #print("time_slot is: " + str(time_slot))
+    #print("time_slot is: " + str(time_slot))
 
     # print(f"time_slot = {time_slot}")
     # print(f"timeunits: {time_units}")
@@ -158,7 +278,7 @@ def predict_optimal_time(
     ]:
         print("Return max percent")
         return optimal_response(
-            my_predictions, ["max_percentage"]["time_index"], time_units
+            my_predictions, potential_times["max_percentage"]["time_index"], time_units
         )
 
     # If there is a window which fulfills the request, return this window.
@@ -174,7 +294,7 @@ def predict_optimal_time(
 
 
 def optimal_response(my_predictions, time_slot, time_units):
-    # logging.info("optimal_response function started, data/prediction.py")
+    # print("optimal_response function started, data/prediction.py")
     average_percent_renewable = my_predictions["percent_renewable"][
         time_slot : (time_slot + time_units)
     ].mean()
@@ -185,11 +305,14 @@ def optimal_response(my_predictions, time_slot, time_units):
     return timestamp, message, average_percent_renewable
 
 
-def default_response(message):
+def default_response(message,request_time=None):
     average_percent_renewable = 0
-    timestamp = int(datetime.now(timezone.utc).timestamp())
+    if request_time is None :
+        timestamp = int(datetime.now(timezone.utc).timestamp())
+    else :
+        timestamp = int(request_time.timestamp())
+    
     return timestamp, message, average_percent_renewable
-
 
 def compute_percentages(my_predictions, percent_renewable):
     """
@@ -200,7 +323,6 @@ def compute_percentages(my_predictions, percent_renewable):
     """
     # for percent_renewable in [0.1, 0.2, 0.3, 0.4, 0.5,
     #  0.6, 0.7, 0.8, 0.9, 1.0]:
-    # logging.info("compute_percentages function started, data/prediction.py")
     column_name = "above_threshold" + str(percent_renewable)
     # True false column whether percentage of renewables is high enough.
     my_predictions[column_name] = (
@@ -226,7 +348,6 @@ def compute_percentages(my_predictions, percent_renewable):
 
     # append this column as a new column in the data frame and return.
     my_predictions["windows" + str(percent_renewable)] = new_colum
-    # logging.info("compute_percentages function ended, data/prediction.py")
     return my_predictions
 
 
@@ -240,7 +361,6 @@ def compute_rolling_average(
     :return: pandas data frame with the new column
     :rtype: pd.DataFrame
     """
-    # logging.info("compute_rolling_average function started, data/prediction.py")
     if not my_predictions is None:
         my_predictions["rolling_average_pr"] = (
             my_predictions["percent_renewable"]
@@ -249,5 +369,4 @@ def compute_rolling_average(
         )
     if "percent_renewable" not in my_predictions.columns:
         return my_predictions
-    # logging.info("compute_rolling_average function ended, data/prediction.py")
     return my_predictions

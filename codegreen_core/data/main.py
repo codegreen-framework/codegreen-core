@@ -6,7 +6,7 @@ from .  import metadata as meta
 from . import entsoe as et
 from . import carbon_intensity as ct
 
-def energy(country,start_time,end_time,type="historical")-> pd.DataFrame:
+def energy(country,start_time,end_time,type="generation",interval60=True)-> pd.DataFrame:
   """ 
   Returns hourly time series of energy production mix for a specified country and time range. 
 
@@ -57,16 +57,13 @@ def energy(country,start_time,end_time,type="historical")-> pd.DataFrame:
     raise ValueError("Invalid start date")
   if not isinstance(end_time, datetime):
     raise ValueError("Invalid end date")
-  if type not in ['historical', 'forecast']:
+  if type not in ['generation', 'forecast']:
     raise ValueError(Message.INVALID_ENERGY_TYPE)
   
   e_source = meta.get_country_energy_source(country)
   if e_source=="ENTSOE" :
-    # since ENTOSE uses a different data format, datetime object is converted to a string in the format "YYYYMMDDhhmm" and rounded to the nearest hour 
-    start_time = et.convert_date_to_entsoe_format(start_time)
-    end_time = et.convert_date_to_entsoe_format(end_time)
-    if type == "historical":
-      return et.get_actual_production_percentage(country,start_time,end_time)
+    if type == "generation":
+      return et.get_actual_production_percentage(country,start_time,end_time,interval60)
     elif type == "forecast":
       return et.get_forecast_percent_renewable(country,start_time,end_time)
   else:
