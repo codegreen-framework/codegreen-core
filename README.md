@@ -8,8 +8,30 @@ The core business logic of codegreen
   ```
   [codegreen]
   ENTSOE_token = 1234
+
+  # to enable caching of energy data fetched from external resources 
+  enable_energy_caching = true
+  energy_redis_path = redis url
+
+  # to enable the use of our energy forecast prediction models [coming soon]
+  enable_prediction_models = false
+  prediction_redis_path = 
+
+  # to enable  energy efficient prediction deployment 
+  enable_prediction_deployment = false
+  prediction_cron_job_freq_hour = 1
+  predication_docker_volume_path = /full/local/path
+  codegreen_docker_network = codegreen_default 
+
+  # to enable logging
+  enable_time_prediction_logging = true
+  time_prediction_log_folder_path = full/local/path
+
+  
   ```
   - Get ENTSOE token from the [transparency platform](https://transparency.entsoe.eu/dashboard/show)
+  - assuming redis server is up and running 
+  - to enable the energy efficient deployment of models, docker is required
 
 # Dev related
 - Each sub package has a `main.py` where the main methods  are defined 

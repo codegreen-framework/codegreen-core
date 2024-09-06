@@ -10,7 +10,9 @@ class Message(Enum):
     ZERO_OR_NEGATIVE_RUNTIME = "ZERO_OR_NEGATIVE_RUNTIME"
     NEGATIVE_PERCENT_RENEWABLE = "NEGATIVE_PERCENT_RENEWABLE"
     INVALID_ENERGY_TYPE = "INVALID_ENERGY_TYPE"
-    NO_ENERGY_SOURCE = "No energy source found for the country"
+    NO_ENERGY_SOURCE = "No energy source found for the country",
+    INVALID_DATA = "Invalid data provided",
+    ENERGY_DATA_FETCHING_ERROR = "Error in fetching energy data for the country"
 
 class CodegreenDataError(Exception):
     pass

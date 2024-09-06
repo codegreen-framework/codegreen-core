@@ -4,13 +4,14 @@ requires = ["setuptools>=61.0",
   "pandas",
   "numpy",
   "entsoe-py",
-  "codecarbon"
+  "codecarbon",
+  "redis", "csv"
 ]
 
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "codegreen"
+name = "codegreen_core"
 version = "0.0.1"
 authors = [
   { name="Anne Hartebrodt", email="anne.hartebrodt@fau.de" },

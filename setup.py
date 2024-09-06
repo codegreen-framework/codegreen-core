@@ -8,5 +8,5 @@ setup(
         'codegreen_core.data': ['country_list.json','ci_default_values.csv'],
     },
     packages=find_packages(),
-    install_requires=["pandas","numpy","entsoe-py"]
+    install_requires=["pandas","numpy","entsoe-py","redis"]
 )
