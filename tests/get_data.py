@@ -7,6 +7,7 @@ from codegreen_core.data.entsoe import renewableSources,nonRenewableSources
 from datetime import datetime
 import pandas as pd
 import numpy as np
+import traceback
 
 def gen_test_case(start,end,label):
   country_list = get_country_metadata()
@@ -95,3 +96,36 @@ def compute_rrs_error(downloaded,fetched):
 #compute_rrs_error("de_24_actual_downloaded","DE3")
 #compute_rrs_error("lt_24_actual_downloaded","LT3")
 
+
+def get_forecast_for_testing():
+  try :
+    dates1 = [
+      [datetime(2024,1,5),datetime(2024,1,10),1],
+      [datetime(2024,3,15),datetime(2024,3,20),3],
+      [datetime(2024,5,10),datetime(2024,5,15),5],
+      [datetime(2024,8,1),datetime(2024,8,10),8]
+    ]
+    clist = gen_test_case(datetime(2024,7,5),datetime(2024,7,10),"")
+    test_data = pd.DataFrame()
+    for c in clist :
+      for r in dates1:
+        try:
+          data = energy(c["country"],r[0],r[1],type="forecast")
+          print(c["country"]," ",r[2])
+          # data["data"].to_csv("data/"+c["country"]+str(r[2])+"_forecast.csv")
+          data["data"]["file_id"] = c["country"]+str(r[2])
+          print(data)
+          test_data = pd.concat([test_data,data["data"]], ignore_index=True)
+        except Exception as e:
+          print(traceback.format_exc())
+          print(e)
+      
+      test_data.to_csv("data/prediction_testing_data.csv")
+  except Exception :
+    print(Exception)
+
+# get_forecast_for_testing()
+
+
+data = energy("DE",datetime(2024,9,11),datetime(2024,9,12),"generation",False)
+print(data)

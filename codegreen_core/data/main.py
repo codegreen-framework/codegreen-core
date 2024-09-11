@@ -59,6 +59,7 @@ def energy(country,start_time,end_time,type="generation",interval60=True)-> pd.D
     raise ValueError("Invalid end date")
   if type not in ['generation', 'forecast']:
     raise ValueError(Message.INVALID_ENERGY_TYPE)
+  # check start<end and both are not same 
   
   e_source = meta.get_country_energy_source(country)
   if e_source=="ENTSOE" :

@@ -13,9 +13,7 @@ import redis
 import json
 import traceback
 
-
 # ======= Caching energy data in redis ============
-
 def get_country_key(country_code):
     return "codegreen_"+country_code
 
@@ -99,10 +97,7 @@ def get_energy_data(country,start,end):
     if Config.get("enable_energy_caching")==True: 
         try :
             forecast = get_cache_or_update(country, start, end)
-            #print(forecast)
             forecast_data = pd.DataFrame(forecast["data"])
-            #print("====")
-            #print(forecast_data)
             return forecast_data
         except Exception as e :
             print(traceback.format_exc())
@@ -120,7 +115,7 @@ def predict_now(country: str, estimated_runtime_hours: int, estimated_runtime_mi
     :type estimated_runtime_hours: int
     :param estimated_runtime_minutes: The estimated runtime in minutes 
     :type estimated_runtime_minutes: int
-    :param hard_finish_date: The latest possible finish time for the task
+    :param hard_finish_date: The latest possible finish time for the task. Datetime object in local time zone 
     :type hard_finish_date: datetime
     :param criteria: Criteria based on which optimal time is calculated. Valid value "percent_renewable"
     :type criteria: str
@@ -128,12 +123,13 @@ def predict_now(country: str, estimated_runtime_hours: int, estimated_runtime_mi
     :type percent_renewable: int    
     :return: Tuple[timestamp, message, average_percent_renewable]
     :rtype: tuple
-    
     """
     if criteria == "percent_renewable":
         try:
             start_time = datetime.now()
+            # print(start_time,hard_finish_date)
             energy_data = get_energy_data(country,start_time,hard_finish_date)
+            # print(energy_data)
             if energy_data is not None :
                 return predict_optimal_time(
                     energy_data,
@@ -157,7 +153,7 @@ def predict_optimal_time(
     estimated_runtime_hours: int,
     estimated_runtime_minutes: int,
     percent_renewable: int,
-    hard_finish_date: datetime.timestamp,
+    hard_finish_date: datetime,
     request_time : datetime = None
 ) -> tuple:
     """
@@ -167,8 +163,8 @@ def predict_optimal_time(
     :param estimated_runtime_hours: The estimated runtime in hours
     :param estimated_runtime_minutes: The estimated runtime in minutes 
     :param percent_renewable: The minimum percentage of renewable energy desired during the runtime
-    :param hard_finish_date: The latest possible finish time for the task
-    :param request_time: The time at which the prediction is requested. Defaults to None, then the current time is used
+    :param hard_finish_date: The latest possible finish time for the task. 
+    :param request_time: The time at which the prediction is requested. Defaults to None, then the current time is used. Assumed to be in local timezone
 
     :return: Tuple[timestamp, message, average_percent_renewable]
     :rtype: tuple
@@ -199,28 +195,35 @@ def predict_optimal_time(
     if total_runtime_in_minutes <= 0:
         return default_response(Message.ZERO_OR_NEGATIVE_RUNTIME,request_time)
         
-    if request_time is None:
-      # request time will be the current time 
-      # dial back by 60 minutes to avoid waiting unnecessarily for the next full quarterhour.
-      current_time = int((datetime.now(timezone.utc) - timedelta(minutes=granularity)).timestamp())
-      estimated_finish_time = int((datetime.now(timezone.utc) + timedelta(minutes=total_runtime_in_minutes)).timestamp())      
+    if request_time is not None:
+      # request time is provided in local time zone, first convert to utc then use it 
+      req_time_utc = request_time.astimezone(tz.tzutc())
     else :
-      # else, the current time value is the request time converted to utc time stamp
-      request_time_utc =  request_time.astimezone(tz.tzutc())
-      current_time = (request_time_utc - timedelta(minutes=granularity)).timestamp()
-      estimated_finish_time = (request_time_utc + timedelta(minutes=total_runtime_in_minutes)).timestamp()
+      # request time is current time in utc 
+      req_time_utc = datetime.now(timezone.utc)
+    
+    # if req_time_utc.minute  >= granularity/2 :
+    #     current_time = (request_time_utc - timedelta(minutes=granularity)).timestamp()
+    # else :
+    #     current_time = (request_time_utc).timestamp()
+    
+    current_time_hour = req_time_utc.replace(minute=0, second=0, microsecond=0)
+    current_time = int(current_time_hour.timestamp() )    
 
-    #print(estimated_finish_time)
-    #print(type(estimated_finish_time))
-    #print(estimated_finish_time, int(hard_finish_date.timestamp()))
+    # dial back by 60 minutes to avoid waiting unnecessarily for the next full quarterhour.      
+    # current_time = int((datetime.now(timezone.utc) - timedelta(minutes=granularity)).timestamp()) # current time is unix timestamp
+    estimated_finish_hour = current_time_hour + timedelta(minutes=total_runtime_in_minutes)
+    estimated_finish_time = int(estimated_finish_hour.timestamp())    # unix timestamp  
+
+    print(req_time_utc,current_time_hour,estimated_finish_hour)
+    # hard_finish_date is in local time zone  so it's converted to timestamp 
     if estimated_finish_time >= int(hard_finish_date.timestamp()):
         return default_response(Message.RUNTIME_LONGER_THAN_DEADLINE_ALLOWS,request_time)
-
 
     # ========== the predication part ===========
     # this is to make the old code from the web repo compatible with the new one. TODO refine it 
     my_predictions = energy_data
-    
+
     # Reduce data to the relevant time frame
     my_predictions = my_predictions[my_predictions["posix_timestamp"] >= current_time]
     my_predictions = my_predictions[my_predictions["posix_timestamp"] <= hard_finish_date.timestamp()]
@@ -230,7 +233,6 @@ def predict_optimal_time(
         return default_response(Message.NO_DATA,request_time)
 
     my_predictions = my_predictions.reset_index()
-
     # needs to be computed every time, because when time runs, the number of
     # renewable timeslots above a certain threshold is reduced.
     # This can potentially be improved to avoid duplicate computation all the
@@ -324,6 +326,7 @@ def default_response(message,request_time=None):
     if request_time is None :
         timestamp = int(datetime.now(timezone.utc).timestamp())
     else :
+        # request time in local time is converted to utc timestamp
         timestamp = int(request_time.timestamp())
     
     return timestamp, message, average_percent_renewable

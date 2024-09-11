@@ -52,7 +52,7 @@ def refine_data(options, data1):
     start_time = data1.index.min()
     end_time = data1.index.max()
     expected_timestamps = pd.date_range(
-        start=start_time, end=end_time, freq=f"{durationMin}T")
+        start=start_time, end=end_time, freq=f"{durationMin}min")
     expected_df = pd.DataFrame(index=expected_timestamps)
     missing_indices = expected_df.index.difference(data1.index)
     """ Next, we fill in the missing values. 
@@ -186,7 +186,7 @@ def convert_to_60min_interval(rawData):
         newGroupedData = oldData.groupby('group_id').mean()
         # new timestamps which are 60 min apart 
         new_timestamps = pd.date_range(
-            start=start_time, end=end_time, freq=f"{durationMin}T", tz='UTC')
+            start=start_time, end=end_time, freq=f"{durationMin}min", tz='UTC')
         new_timestamps = new_timestamps.strftime('%Y%m%d%H%M')
         newGroupedData["startTimeUTC"] = new_timestamps
         return newGroupedData
@@ -234,10 +234,10 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> p
     # calculate percent renewable
     table["percentRenewable"] = (table["renewableTotal"] / table["total"]) * 100
     # refine percentage values : replacing missing values with 0 and converting to integer
-    table['percentRenewable'].fillna(0, inplace=True)
+    table['percentRenewable'] = table['percentRenewable'].fillna(0)
     table["percentRenewable"] = table["percentRenewable"].round().astype(int)
     table["percentRenewableWS"] = (table["renewableTotalWS"] / table["total"]) * 100
-    table['percentRenewableWS'].fillna(0, inplace=True)
+    table['percentRenewableWS']= table['percentRenewableWS'].fillna(0)
     table["percentRenewableWS"] = table["percentRenewableWS"].round().astype(int)
 
     # individual energy source percentage calculation 
@@ -249,7 +249,7 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> p
         # print(fieldName)
         table[fieldName] = table[keys_available].sum(axis=1)
         table[fieldName] = (table[fieldName]/table["total"])*100
-        table[fieldName].fillna(0, inplace=True)
+        table[fieldName] = table[fieldName].fillna(0)
         table[fieldName] =  table[fieldName].astype(int)
     
     return table
@@ -263,6 +263,7 @@ def get_forecast_percent_renewable(country:str, start:datetime, end:datetime) ->
     - the data frame includes : startTimeUTC, totalRenewable,total,percent_renewable,posix_timestamp
     """
     try:
+        # print(country,start,end)
         start = convert_date_to_entsoe_format(start)
         end = convert_date_to_entsoe_format(end)
         options = {"country": country, "start": start,"end": end}
@@ -278,7 +279,7 @@ def get_forecast_percent_renewable(country:str, start:datetime, end:datetime) ->
             windsolar = windsolarRaw["data"]
         windsolar["total"] = total["total"]
         windsolar["percentRenewable"] = (windsolar['totalRenewable'] / windsolar['total']) * 100
-        windsolar['percentRenewable']= windsolar['percentRenewable'].fillna(0, inplace=True)
+        windsolar['percentRenewable']= windsolar['percentRenewable'].fillna(0)
         windsolar["percentRenewable"] = windsolar["percentRenewable"].round().astype(int)
         windsolar = windsolar.rename(columns={'percentRenewable': 'percent_renewable'})
         windsolar['startTimeUTC'] = pd.to_datetime(windsolar['startTimeUTC'], format='%Y%m%d%H%M')

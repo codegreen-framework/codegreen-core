@@ -1,0 +1,5 @@
+# Exclude the tests directory
+exclude tests/*
+
+# Exclude all .pyc files
+global-exclude *.pyc

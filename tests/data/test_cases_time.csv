@@ -1,0 +1,7 @@
+country,start_time,runtime_hour,runtime_min,hard_deadline_hour,percent_renewable,expected_timestamp,description
+AT1,2024-01-05 00:00:00,5,0,2,10,1704412800,(start time) Average renewable energy under 1 hour  short-term future (RUNTIME_LONGER_THAN_DEADLINE_ALLOWS)
+AT1,2024-01-05 00:00:00,1,30,2,50,1704412800,(start time) High renewable energy  slightly over 1 hour  near-term future (OPTIMAL_TIME) 
+AT1,2024-01-05 00:00:00,1,30,2,50,1704412800, 2 hours runtime medium-term future
+AT1,2024-01-05 00:00:00,1,30,2,50,1704412800,Zero percent renewable minimal runtime  very short-term future
+AT1,2024-01-05 00:00:00,1,30,2,50,1704412800,Full renewable energy  zero runtime  immediate request
+AT1,2024-01-05 00:00:00,1,30,2,50,1704412800,High renewable energy long runtime  long-term future

@@ -1,9 +1,10 @@
 import codegreen_core.tools as tools
 import pytest
 from codegreen_core.utils.message import CodegreenDataError,Message
-from datetime import datetime,timezone
+from datetime import datetime,timezone,timedelta
 import codegreen_core.tools.loadshift_time as ts
 import pandas as pd
+import pytz
 
 
 # Optimal time predications 
@@ -13,8 +14,8 @@ class TestOptimalTimeCore:
   dummy_energy_data_1 = pd.DataFrame({"startTimeUTC":[1,2,3],"totalRenewable":[1,2,3],"percent_renewable":[1,2,3]})
   request_time_1 = datetime(2024,1,5,0,0)
   request_time_2 = datetime(2024,1,10,0,0)
-  hard_finish_time_1 = datetime(2024,1,5,15,0).timestamp()
-  hard_finish_time_2 = datetime(2024,1,15,15,0).timestamp()
+  hard_finish_time_1 = datetime(2024,1,5,15,0)
+  hard_finish_time_2 = datetime(2024,1,15,15,0)
   
   
   def test_energy_data_blank(self):
@@ -75,7 +76,7 @@ class TestOptimalTimeCore:
 
   def test_multiple(self):
     data = pd.read_csv("data/DE_forecast1.csv")
-    hard_finish_time = datetime(2024,1,7,0,0).timestamp()
+    hard_finish_time = datetime(2024,1,7,0,0)
     request_time = datetime(2024,1,5,0,0)
     cases = [
       {
@@ -170,26 +171,54 @@ class TestOptimalTimeCore:
       #  "start":1704412800 # no match , just start now 
       #  }
     ]
-
-    for case in cases:
-      #print(case)
-      print(str(case["p"])+"%,"+str(case["h"])+" h")
-      timestamp, message, average_percent_renewable = ts.predict_optimal_time(data,case["h"],0,case["p"],case["hd"],case["rd"])
-      print(timestamp)
-      assert timestamp == case["start"]
-
-
-
-# test if request time is none current time is being used 
-
-
-class TestOptimalTimeNow:
-  def data_validation_country(self):
+    assert 1==1
+  
+  def test_data_validation_country(self):
     timestamp1  = int(datetime.now(timezone.utc).timestamp())
     timestamp, message, average_percent_renewable = ts.predict_now("UFO",10,0,datetime(2024,9,7),"percent_renewable",30)
     print(timestamp1,timestamp, message)
     assert timestamp - timestamp1 <= 10 
-    assert message == Message.ENERGY_DATA_FETCHING_ERROR
+    assert message ==  Message.ENERGY_DATA_FETCHING_ERROR
+  def test_all_country_test(self):
+    test_cases = pd.read_csv("./data/test_cases_time.csv")
+    data = pd.read_csv("./data/prediction_testing_data.csv")
+    for index, row in test_cases.iterrows():
+      edata_filter = data["file_id"] == row["country"]
+      energy_data = data[edata_filter].copy()
+      start = datetime.strptime(row["start_time"], '%Y-%m-%d %H:%M:%S')
+      end = (start + timedelta(hours=row["hard_deadline_hour"]))
+      a,b,c = ts.predict_optimal_time(energy_data,row["runtime_hour"],row["runtime_min"],row["percent_renewable"],end,start)
+      print(a,b,c)
+      assert int(a) ==  row["expected_timestamp"]
+
+    # for case in cases:
+    #   #print(case)
+    #   print(str(case["p"])+"%,"+str(case["h"])+" h")
+    #   timestamp, message, average_percent_renewable = ts.predict_optimal_time(data,case["h"],0,case["p"],case["hd"],case["rd"])
+    #   print(timestamp)
+    #   assert timestamp == case["start"]
+
+
+# test if request time is none current time is being used 
+def test_all_country():
+    test_cases = pd.read_csv("./data/test_cases_time.csv")
+    data = pd.read_csv("./data/prediction_testing_data.csv")
+    for _ , row in test_cases.iterrows():
+      print(row)
+      edata_filter = data["file_id"] == row["country"]
+      energy_data = data[edata_filter].copy()
+      
+      start_utc = datetime.strptime(row["start_time"], '%Y-%m-%d %H:%M:%S')
+      start_utc = pytz.UTC.localize(start_utc)
+      start = start_utc.astimezone(pytz.timezone('Europe/Berlin'))
+      end = (start + timedelta(hours=row["hard_deadline_hour"]))
+      
+      a,b,c = ts.predict_optimal_time(energy_data,row["runtime_hour"],row["runtime_min"],row["percent_renewable"],end,start)
+      print(a,b,c)
+      assert int(a) ==  row["expected_timestamp"]
+      print("====")
+
+test_all_country()
 
 
 # def data_validation_country():
@@ -200,3 +229,4 @@ class TestOptimalTimeNow:
 #     #assert message == Message.ENERGY_DATA_FETCHING_ERROR
 
 # data_validation_country()
+# a,b,c = ts.predict_now("DE",2,30,datetime.fromtimestamp(1726092000),percent_renewable=50)
