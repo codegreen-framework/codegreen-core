@@ -1,8 +1,8 @@
-import codegreen_core.tool as tool
+import codegreen_core.tools as tools
 import pytest
 from codegreen_core.utils.message import CodegreenDataError,Message
 from datetime import datetime,timezone
-import codegreen_core.tool.loadshift_time as ts
+import codegreen_core.tools.loadshift_time as ts
 import pandas as pd
 
 

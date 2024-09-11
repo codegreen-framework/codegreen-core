@@ -20,7 +20,6 @@ def predict_optimal_job_time(
 def predict_optimal_location():
     return l.predict_optimal_location()
 
-
 def calculate_carbon_footprint(
         country: str,
         start_time,

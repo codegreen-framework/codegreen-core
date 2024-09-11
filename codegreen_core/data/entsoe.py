@@ -278,7 +278,7 @@ def get_forecast_percent_renewable(country:str, start:datetime, end:datetime) ->
             windsolar = windsolarRaw["data"]
         windsolar["total"] = total["total"]
         windsolar["percentRenewable"] = (windsolar['totalRenewable'] / windsolar['total']) * 100
-        windsolar['percentRenewable'].fillna(0, inplace=True)
+        windsolar['percentRenewable']= windsolar['percentRenewable'].fillna(0, inplace=True)
         windsolar["percentRenewable"] = windsolar["percentRenewable"].round().astype(int)
         windsolar = windsolar.rename(columns={'percentRenewable': 'percent_renewable'})
         windsolar['startTimeUTC'] = pd.to_datetime(windsolar['startTimeUTC'], format='%Y%m%d%H%M')

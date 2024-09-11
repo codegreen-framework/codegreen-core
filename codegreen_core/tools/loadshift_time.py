@@ -13,6 +13,9 @@ import redis
 import json
 import traceback
 
+
+# ======= Caching energy data in redis ============
+
 def get_country_key(country_code):
     return "codegreen_"+country_code
 
@@ -86,9 +89,12 @@ def pull_data(country, start, end):
         print(e)
         return None
 
+
+# ========= the main methods  ============
+
 def get_energy_data(country,start,end):
     """
-    get energy data and check if it must be cached based on the options set 
+    Get energy data and check if it must be cached based on the options set 
     """
     if Config.get("enable_energy_caching")==True: 
         try :
@@ -104,19 +110,30 @@ def get_energy_data(country,start,end):
         forecast =   energy(country,start,end,"forecast")
         return forecast["data"]
 
-def predict_now(
-        country: str,
-        estimated_runtime_hours: int,
-        estimated_runtime_minutes:int,
-        hard_finish_date:datetime,
-        criteria:str = "percent_renewable",
-        percent_renewable: int = 50,
-):
+def predict_now(country: str, estimated_runtime_hours: int, estimated_runtime_minutes:int, hard_finish_date:datetime, criteria:str = "percent_renewable", percent_renewable: int = 50)->tuple:
+    """
+    Predicts optimal computation time in the given location starting now 
+
+    :param country: The country code 
+    :type country: str
+    :param estimated_runtime_hours: The estimated runtime in hours
+    :type estimated_runtime_hours: int
+    :param estimated_runtime_minutes: The estimated runtime in minutes 
+    :type estimated_runtime_minutes: int
+    :param hard_finish_date: The latest possible finish time for the task
+    :type hard_finish_date: datetime
+    :param criteria: Criteria based on which optimal time is calculated. Valid value "percent_renewable"
+    :type criteria: str
+    :param percent_renewable: The minimum percentage of renewable energy desired during the runtime
+    :type percent_renewable: int    
+    :return: Tuple[timestamp, message, average_percent_renewable]
+    :rtype: tuple
+    
+    """
     if criteria == "percent_renewable":
         try:
             start_time = datetime.now()
             energy_data = get_energy_data(country,start_time,hard_finish_date)
-            # print(energy_data)
             if energy_data is not None :
                 return predict_optimal_time(
                     energy_data,
@@ -127,13 +144,13 @@ def predict_now(
                 )
             else:
                 return default_response(Message.ENERGY_DATA_FETCHING_ERROR)
-        
         except Exception as e:
             print(traceback.format_exc())
             return default_response(Message.ENERGY_DATA_FETCHING_ERROR)
     else:
         return default_response(Message.INVALID_PREDICTION_CRITERIA)
-    
+
+# ======= Optimal prediction part =========    
 
 def predict_optimal_time(
     energy_data: pd.DataFrame,
@@ -157,12 +174,9 @@ def predict_optimal_time(
     :rtype: tuple
     """
 
-    # print(type(hard_finish_date))
-    # print(type(request_time))
     granularity =  60 # assuming that the granularity of time series is 60 minutes
     
     #  ============ data validation   =========
-
     if not isinstance(hard_finish_date,datetime):
         raise ValueError("Invalid hard_finish_date. it must be a datetime object")
 
@@ -209,7 +223,7 @@ def predict_optimal_time(
     
     # Reduce data to the relevant time frame
     my_predictions = my_predictions[my_predictions["posix_timestamp"] >= current_time]
-    my_predictions = my_predictions[my_predictions["posix_timestamp"] <= hard_finish_date]
+    my_predictions = my_predictions[my_predictions["posix_timestamp"] <= hard_finish_date.timestamp()]
 
     # Possible that data has not been reported
     if my_predictions.shape[0] == 0:
