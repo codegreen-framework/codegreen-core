@@ -46,7 +46,7 @@ The core business logic of codegreen
     - `country` : the valid 2 letter country code
     - `start_time` : datetime object (will be rounded to nearest hour)
     - `end_time` :  datetime object (will be rounded to the nearest hour)
-    - `type` : the type of data to be fetched : `historical`(default) or `forecast`
+    - `type` : the type of data to be fetched : `generation`(default) or `forecast`
   - The list of countries for which this method returns energy data is available [here](./codegreen_core/data/country_list.json)
   - Examples :
   ```
