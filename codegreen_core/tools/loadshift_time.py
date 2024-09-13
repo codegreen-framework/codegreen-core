@@ -3,19 +3,19 @@ from dateutil import tz
 import numpy as np
 import pandas as pd
 # from greenerai.api.data.utils import Message
-from ..utils.message import Message
-from ..utils.log import time_prediction as log_time_prediction
-from ..data.metadata import get_country_energy_source
+from ..utilities.message import Message
+from ..utilities.log import time_prediction as log_time_prediction
+from ..utilities.metadata import get_country_energy_source
 from ..data import  entsoe as e # get_forecast_percent_renewable,get_current_date_entsoe_format,add_hours_to_entsoe_data
 from ..data import energy 
-from ..utils.config import Config
+from ..utilities.config import Config
 import redis
 import json
 import traceback
 
 # ======= Caching energy data in redis ============
 def get_country_key(country_code):
-    return "codegreen_"+country_code
+    return "codegreen_optimal_"+country_code
 
 def get_cache_or_update(country, start, deadline):
     """

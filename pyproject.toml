@@ -5,7 +5,9 @@ requires = ["setuptools>=61.0",
   "numpy",
   "entsoe-py",
   "codecarbon",
-  "redis"
+  "redis",
+  "scikit-learn",
+  "tensorflow"
 ]
 
 build-backend = "setuptools.build_meta"

@@ -5,8 +5,8 @@ setup(
     version='0.1',
     include_package_data=True,
     package_data={
-        'codegreen_core.data': ['country_list.json','ci_default_values.csv'],
+        'codegreen_core.utilities': ['country_list.json','ci_default_values.csv','model_details.json'],
     },
     packages=find_packages(),
-    install_requires=["pandas","numpy","entsoe-py","redis"]
+    install_requires=["pandas","numpy","entsoe-py","redis","tensorflow","scikit-learn"]
 )

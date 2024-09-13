@@ -1,7 +1,7 @@
 from .loadshift_time import predict_optimal_time
 from datetime import datetime
 from ..data import energy
-from ..utils.message import CodegreenDataError
+from ..utilities.message import CodegreenDataError
 
 def predict_optimal_location_now(country_list:list,estimated_runtime_hours:int,estimated_runtime_minutes:int,percent_renewable:int,hard_finish_date:datetime)->tuple:
     """ 
