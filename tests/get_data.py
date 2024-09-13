@@ -1,7 +1,7 @@
 # this file contains the methods to fetch country data to be used to test prediction times 
 
 from codegreen_core.data import energy
-from codegreen_core.data.metadata import get_country_metadata
+from codegreen_core.utilities.metadata import get_country_metadata
 from codegreen_core.data.entsoe import renewableSources,nonRenewableSources
 
 from datetime import datetime

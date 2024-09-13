@@ -167,3 +167,4 @@ tests_manual/
 
 # for now 
 tests/data1
+.DS_Store

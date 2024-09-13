@@ -1,6 +1,6 @@
 import pytest
 from codegreen_core.data import entsoe,energy,carbon_intensity
-from codegreen_core.utils.message import CodegreenDataError
+from codegreen_core.utilities.message import CodegreenDataError
 from datetime import datetime
 import pandas as pd
 

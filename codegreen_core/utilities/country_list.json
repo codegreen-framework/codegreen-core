@@ -13,7 +13,15 @@
     "BE": {
       "country": "Belgium",
       "energy_source": "ENTSOE",
-      "carbon_intensity_method": "ipcc"
+      "carbon_intensity_method": "ipcc",
+      "models":[
+        {
+          "name":"BE_v0.h5",
+          "input_sequence":60,
+          "description":"Trained on historical data (2020-01-01 - 2023-05-01)",
+          "version":0
+        }
+      ]
     },
     "BG": {
       "country": "Bulgaria",
@@ -43,12 +51,28 @@
     "EE": {
       "country": "Estonia",
       "energy_source": "ENTSOE",
-      "carbon_intensity_method": "ipcc"
+      "carbon_intensity_method": "ipcc",
+      "models":[
+        {
+          "name":"EE_v0.h5",
+          "input_sequence":60,
+          "description":"Trained on historical data (2020-01-01 - 2023-05-01)",
+          "version":0
+        }
+      ]
     },
     "ES": {
       "country": "Spain",
       "energy_source": "ENTSOE",
-      "carbon_intensity_method": "ipcc"
+      "carbon_intensity_method": "ipcc",
+      "models":[
+        {
+          "name":"ES_v0.h5",
+          "input_sequence":24,
+          "description":"Trained on historical data (2020-01-01 - 2023-05-01)",
+          "version":0
+        }
+    ]
     },
     "FI": {
       "country": "Finland",
@@ -77,7 +101,8 @@
     },
     "IE": {
       "country": "Ireland",
-      "energy_source": "ENTSOE",
+      "energy_source": null, 
+      "note":"ENTOSE does not seem to get data",
       "carbon_intensity_method": "ipcc"
     },
     "IT": {
@@ -143,7 +168,15 @@
     "SE": {
       "country": "Sweden",
       "energy_source": "ENTSOE",
-      "carbon_intensity_method": "ipcc"
+      "carbon_intensity_method": "ipcc",
+      "models":[
+        {
+          "name":"SE_v0.h5",
+          "input_sequence":24,
+          "description":"Trained on historical data (2020-01-01 - 2023-05-01)",
+          "version":0
+        }
+      ]
     },
     "SI": {
       "country": "Slovenia",

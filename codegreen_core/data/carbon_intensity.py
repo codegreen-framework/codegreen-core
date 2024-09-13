@@ -1,6 +1,6 @@
 import pandas as pd
 from .entsoe import get_actual_production_percentage, convert_date_to_entsoe_format
-from .metadata import get_country_energy_source, get_default_ci_value
+from ..utilities.metadata import get_country_energy_source, get_default_ci_value
 
 base_carbon_intensity_values = {
     "codecarbon": {

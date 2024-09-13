@@ -1,4 +1,4 @@
-from ..utils.config import Config
+from ..utilities.config import Config
 import pandas as pd
 from datetime import datetime, timedelta
 from entsoe import EntsoePandasClient as entsoePandas

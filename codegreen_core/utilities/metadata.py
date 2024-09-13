@@ -1,7 +1,13 @@
+"""
+TODO Describe the format of country_list.json file here
+
+"""
+
+
 import json 
-import importlib.resources as il
 import pandas as pd
-from .. import data as dt
+from pathlib import Path
+current_dir = Path(__file__).parent
 
 def get_country_metadata():
   """
@@ -14,9 +20,10 @@ def get_country_metadata():
     - carbon_intensity_method : this is the methodology to be used to calculate the CI values based on the energy fetched
       - the current methodologies supported are described in "carbon_intensity.py" file
   """
-  with il.open_text(dt,"country_list.json") as json_file:
+  json_file_path = current_dir / 'country_list.json'
+  with open(json_file_path, 'r') as json_file:
     data = json.load(json_file)
-    return data["available"]
+    return data['available']
 
 def get_country_energy_source(country_code):
   """
@@ -34,11 +41,25 @@ def get_default_ci_value(country_code):
     This method returns the default average Carbon Intensity for a given country. These values are sourced from the International Electricity Factors, 
     https://www.carbonfootprint.com/international_electricity_factors.html (accessed 5 July 2024)  and are stored in the "ci_default_value.csv" file. 
   """
-  with il.open_text(dt,"ci_default_values.csv") as csv_file:
-    data = pd.read_csv(csv_file)
-    row = data.loc[data['code'] == country_code]
-    if not row.empty:
-      val = row.iloc[0]['kgCO2e_per_kWh']
-      return val
-    else :
-      return None
+  csv_file_path = current_dir / "ci_default_values.csv"
+  data = pd.read_csv(csv_file_path)
+  row = data.loc[data['code'] == country_code]
+  if not row.empty:
+    val = row.iloc[0]['kgCO2e_per_kWh']
+    return val
+  else :
+    return None
+
+def get_prediction_model_details(country,version=None):
+  """Returns details about the energy forecast prediction model for the given country and version (latest version by default)"""
+  metadata = get_country_metadata()
+  if country in metadata.keys():
+    if version is None :
+      return metadata[country]["models"][len(metadata[country]["models"])-1]
+    else:
+      filter = next([d for d in metadata[country]["models"]],None)
+      if filter in None:
+        raise "Version does not exists"
+      return filter
+  else:
+    raise "No models exists for this country"
