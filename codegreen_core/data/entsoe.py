@@ -25,11 +25,11 @@ energy_type = {
 
 # helper methods
 
-def get_API_token() -> str:
+def _get_API_token() -> str:
   """ reads the ENTOSE api token required to access data from the portal. must be defined in the config file"""
   return Config.get("ENTSOE_token")
 
-def refine_data(options, data1):
+def _refine_data(options, data1):
     """Returns a refined version of the dataframe. 
     The Refining process involves finding missing values and substituting them with average values. 
     Additionally, a new column `startTimeUTC` is appended to the dataframe representing the start time in UTC  
@@ -84,12 +84,12 @@ def refine_data(options, data1):
     data1.sort_index(inplace=True)
     return {"data": data1, "refine_logs": refine_logs}
 
-def entsoe_get_actual_generation(options={"country": "", "start": "", "end": ""}):
+def _entsoe_get_actual_generation(options={"country": "", "start": "", "end": ""}):
     """Fetches the aggregated actual generation per production type data (16.1.B&C) for the given country within the given start and end date
     params: options = {country (2 letter country code),start,end} . Both the dates are in the YYYYMMDDhhmm format and the local time zone
     returns : {"data":pd.DataFrame, "duration":duration (in min) of the time series data, "refine_logs":"notes on refinements made" }
     """
-    client1 = entsoePandas(api_key=get_API_token())
+    client1 = entsoePandas(api_key=_get_API_token())
     data1 = client1.query_generation(
         options["country"],
         start=pd.Timestamp(options["start"], tz='UTC'),
@@ -104,19 +104,19 @@ def entsoe_get_actual_generation(options={"country": "", "start": "", "end": ""}
     data1.columns = [(col[0] if isinstance(col, tuple) else col)
                      for col in data1.columns]
     # refine the dataframe. see the refine method
-    data2 = refine_data(options, data1)
+    data2 = _refine_data(options, data1)
     refined_data = data2["data"]
     refined_data = refined_data.reset_index(drop=True)
     # finding the duration of the time series data
     durationMin = (data1.index[1] - data1.index[0]).total_seconds() / 60
     return {"data": refined_data, "duration": durationMin, "refine_logs": data2["refine_logs"]}
 
-def entsoe_get_total_forecast(options={"country": "", "start": "", "end": ""}):
+def _entsoe_get_total_forecast(options={"country": "", "start": "", "end": ""}):
     """Fetches the aggregated day ahead total generation forecast data (14.1.C) for the given country within the given start and end date
     params: options = {country (2 letter country code),start,end} . Both the dates are in the YYYYMMDDhhmm format and the local time zone
     returns : {"data":pd.DataFrame, "duration":duration (in min) of the time series data, "refine_logs":"notes on refinements made" }
     """
-    client = entsoePandas(api_key=get_API_token())
+    client = entsoePandas(api_key=_get_API_token())
     data = client.query_generation_forecast(
         options["country"],
         start=pd.Timestamp(options["start"], tz='UTC'),
@@ -126,7 +126,7 @@ def entsoe_get_total_forecast(options={"country": "", "start": "", "end": ""}):
         data = data.to_frame(name="Actual Aggregated")
     durationMin = (data.index[1] - data.index[0]).total_seconds() / 60
     # refining the data
-    data2 = refine_data(options, data)
+    data2 = _refine_data(options, data)
     refined_data = data2["data"]
     # rename the single column
     newCol = {'Actual Aggregated': 'total'}
@@ -134,19 +134,19 @@ def entsoe_get_total_forecast(options={"country": "", "start": "", "end": ""}):
     refined_data = refined_data.reset_index(drop=True)
     return {"data": refined_data, "duration": durationMin, "refine_logs": data2["refine_logs"]}
 
-def entsoe_get_wind_solar_forecast(options={"country": "", "start": "", "end": ""}):
+def _entsoe_get_wind_solar_forecast(options={"country": "", "start": "", "end": ""}):
     """Fetches the aggregated day ahead wind and solar generation forecast data  (14.1.D) for the given country within the given start and end date
     params: options = {country (2 letter country code),start,end} . Both the dates are in the YYYYMMDDhhmm format and the local time zone
     returns : {"data":pd.DataFrame, "duration":duration (in min) of the time series data, "refine_logs":"notes on refinements made" }
     """
-    client = entsoePandas(api_key=get_API_token())
+    client = entsoePandas(api_key=_get_API_token())
     data = client.query_wind_and_solar_forecast(
         options["country"],
         start=pd.Timestamp(options["start"], tz='UTC'),
         end=pd.Timestamp(options["end"], tz='UTC'))
     durationMin = (data.index[1] - data.index[0]).total_seconds() / 60
     # refining the data
-    data2 = refine_data(options, data)
+    data2 = _refine_data(options, data)
     refined_data = data2["data"]
     # calculating the total renewable consumption value
     validCols = ["Solar", "Wind Offshore", "Wind Onshore"]
@@ -158,7 +158,7 @@ def entsoe_get_wind_solar_forecast(options={"country": "", "start": "", "end": "
     refined_data = refined_data.reset_index(drop=True)
     return {"data": refined_data, "duration": durationMin, "refine_logs": data2["refine_logs"]}
 
-def convert_to_60min_interval(rawData):
+def _convert_to_60min_interval(rawData):
     """Given the rawData obtained from the ENTSOE API methods, this function converts the DataFrame into 
     60-minute time intervals by aggregating data from multiple rows. """
     duration = rawData["duration"]
@@ -191,15 +191,8 @@ def convert_to_60min_interval(rawData):
         newGroupedData["startTimeUTC"] = new_timestamps
         return newGroupedData
 
-# more helper methods 
 
-def get_current_date_entsoe_format():
-    return  datetime.now().replace(minute=0, second=0, microsecond=0).strftime('%Y%m%d%H%M')
-
-def add_hours_to_entsoe_data(date_str,hours_to_add):
-    return (datetime.strptime(date_str, '%Y%m%d%H%M') + timedelta(hours=hours_to_add)).strftime('%Y%m%d%H%M')
-
-def convert_date_to_entsoe_format(dt:datetime):
+def _convert_date_to_entsoe_format(dt:datetime):
     return  dt.replace(minute=0, second=0, microsecond=0).strftime('%Y%m%d%H%M')
 
 # the main methods 
@@ -212,11 +205,11 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> p
     """
     options = {"country": country, "start": start,"end": end, "interval60": interval60}
     # get actual generation data per production type and convert it into 60 min interval if required
-    totalRaw = entsoe_get_actual_generation(options)
+    totalRaw = _entsoe_get_actual_generation(options)
     total = totalRaw["data"]
     duration = totalRaw["duration"]
     if options["interval60"] == True and totalRaw["duration"] != 60.0:
-        table = convert_to_60min_interval(totalRaw)
+        table = _convert_to_60min_interval(totalRaw)
         duration = 60
     else:
         table = total
@@ -264,17 +257,17 @@ def get_forecast_percent_renewable(country:str, start:datetime, end:datetime) ->
     """
     try:
         # print(country,start,end)
-        start = convert_date_to_entsoe_format(start)
-        end = convert_date_to_entsoe_format(end)
+        start = _convert_date_to_entsoe_format(start)
+        end = _convert_date_to_entsoe_format(end)
         options = {"country": country, "start": start,"end": end}
-        totalRaw = entsoe_get_total_forecast(options)
+        totalRaw = _entsoe_get_total_forecast(options)
         if totalRaw["duration"] != 60:
-            total = convert_to_60min_interval(totalRaw)
+            total = _convert_to_60min_interval(totalRaw)
         else:
             total = totalRaw["data"]
-        windsolarRaw = entsoe_get_wind_solar_forecast(options)
+        windsolarRaw = _entsoe_get_wind_solar_forecast(options)
         if windsolarRaw["duration"] != 60:
-            windsolar = convert_to_60min_interval(windsolarRaw)
+            windsolar = _convert_to_60min_interval(windsolarRaw)
         else:
             windsolar = windsolarRaw["data"]
         windsolar["total"] = total["total"]

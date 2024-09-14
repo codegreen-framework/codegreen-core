@@ -1,5 +1,28 @@
+"""
+Note : 1 kg = 1000 grams and 1MWh = 1000 kWh. This means, 1 kg/MWh = 1 kg/(kWh * 1000 )  = 1000 g/ (kWH * 1000) ....(both 1000 cancel each other out) => 1kg/MWh = 1g/kWh         
+
+IPCC values
+
+ ============= ============================================================= ====== ====== ====== 
+  type          average of                                                    min    mean   max   
+ ============= ============================================================= ====== ====== ====== 
+  coal          Coal—PC                                                       740    820    910   
+  natural gas   Gas—Combined Cycle                                            410    490    650   
+  biogas        Biomass—cofiring,Biomass—dedicated                            375    485    655   
+  geothermal    Geothermal                                                    6      38     79    
+  hydropower    Hydropower                                                    1      24     2200  
+  nuclear       Nuclear                                                       3.7    12     110   
+  solar         Concentrated Solar Power, Solar PV—rooftop,Solar PV—utility   17.6   38.6   101   
+  wind          Wind onshore, Wind offshore                                   7.5    11.5   45.5  
+ ============= ============================================================= ====== ====== ====== 
+
+
+
+https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf#page=7
+
+"""
+
 import pandas as pd
-from .entsoe import get_actual_production_percentage, convert_date_to_entsoe_format
 from ..utilities.metadata import get_country_energy_source, get_default_ci_value
 
 base_carbon_intensity_values = {
@@ -71,7 +94,7 @@ base_carbon_intensity_values = {
     }
 }
 
-def calculate_weighted_sum(base,weight):
+def _calculate_weighted_sum(base,weight):
     """
     Assuming weight are in percentage
     """
@@ -87,25 +110,16 @@ def calculate_weighted_sum(base,weight):
             + base.get("Wind",0)*weight.get("Wind_per",0))/100,2)
 
 def calculate_carbon_intensity(energy_mix):
+    """
+        This is to calculate the carbon intensity of the thing  TODO 
+
+        :params energy_mix:
+    """
     methods = ["codecarbon","ipcc_lifecycle_min","ipcc_lifecycle_mean","ipcc_lifecycle_mean","ipcc_lifecycle_max","eu_comm"]
     values = {}
     for m in methods:
-        sum = calculate_weighted_sum(base_carbon_intensity_values[m]["values"],energy_mix)
+        sum = _calculate_weighted_sum(base_carbon_intensity_values[m]["values"],energy_mix)
         values[str("ci_"+m)] = sum
     return values
 
-"""
-Note : 1 kg = 1000 grams and 1MWh = 1000 kWh. This means, 1 kg/MWh = 1 kg/(kWh * 1000 )  = 1000 g/ (kWH * 1000) ....(both 1000 cancel each other out) => 1kg/MWh = 1g/kWh         
-IPCC values
-| type        | average of                                                  | min  | mean | max  |
-|-------------|-------------------------------------------------------------|------|------|------|
-| coal        | Coal—PC                                                     | 740  | 820  | 910  |
-| natural gas | Gas—Combined Cycle                                          | 410  | 490  | 650  |
-| biogas      | Biomass—cofiring,Biomass—dedicated                          | 375  | 485  | 655  |
-| geothermal  | Geothermal                                                  | 6    | 38   | 79   |
-| hydropower  | Hydropower                                                  | 1    | 24   | 2200 |
-| nuclear     | Nuclear                                                     | 3.7  | 12   | 110  |
-| solar       | Concentrated Solar Power, Solar PV—rooftop,Solar PV—utility | 17.6 | 38.6 | 101  |
-| wind        | Wind onshore, Wind offshore                                 | 7.5  | 11.5 | 45.5 |
-https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf#page=7
-"""
+

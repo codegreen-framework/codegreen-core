@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
-from ..data import carbon_intensity
+from .carbon_intensity import calculate_carbon_intensity
 
 def calculate_carbon_footprint_job(
     country: str,
@@ -31,7 +31,7 @@ def calculate_carbon_footprint_job(
 
     """
     end_time = start_time + timedelta(minutes=runtime_minutes)
-    ci_ts = carbon_intensity(country, start_time, end_time)
+    ci_ts = calculate_carbon_intensity(country, start_time, end_time)
     e = calculate_energy_consumption(runtime_minutes, number_core, power_draw_core,
                                      usage_factor_core, memory_gb, power_draw_mem, power_usage_efficiency)
     e_hour = e/(runtime_minutes*60)
@@ -42,3 +42,10 @@ def calculate_carbon_footprint_job(
 
 def calculate_energy_consumption(runtime_minutes, number_core, power_draw_core, usage_factor_core, mem_size_gb, power_draw_mem, PUE):
     return round((runtime_minutes/60)*(number_core * power_draw_core * usage_factor_core + mem_size_gb * power_draw_mem) * PUE * 0.001, 2)
+
+
+def get_saving_same_device(country_code,start_time_request,start_time_predicted,runtime,cpu_cores,cpu_memory):
+  
+  ce_job1,ci1 = calculate_carbon_emission_job(country_code,start_time_request,runtime,cpu_cores,cpu_memory) 
+  ce_job2,ci2 = calculate_carbon_emission_job(country_code,start_time_predicted,runtime,cpu_cores,cpu_memory)
+  return ce_job1-ce_job2 # ideally this should be positive todo what if this is negative?, make a note in the comments 

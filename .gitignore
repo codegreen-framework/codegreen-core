@@ -168,3 +168,9 @@ tests_manual/
 # for now 
 tests/data1
 .DS_Store
+
+# temp, will remove later
+codegreen_core/models/files
+codegreen_core/utilities/log.py
+
+.vscode
