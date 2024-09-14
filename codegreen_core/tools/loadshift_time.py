@@ -14,10 +14,10 @@ import json
 import traceback
 
 # ======= Caching energy data in redis ============
-def get_country_key(country_code):
+def _get_country_key(country_code):
     return "codegreen_optimal_"+country_code
 
-def get_cache_or_update(country, start, deadline):
+def _get_cache_or_update(country, start, deadline):
     """
     The cache contains an entry for every country. It holds the country code,
     the last update time, the timestamp of the last entry and the data time series.
@@ -25,11 +25,11 @@ def get_cache_or_update(country, start, deadline):
     The function first checks if the requested final time stamp is available, if not
     it attempts to pull the data from ENTSOE, if the last update time is at least one hour earlier.
     """
-    print("get_cache_or_update started")
+    print("_get_cache_or_update started")
     cache = redis.from_url(Config.get("energy_redis_path"))
-    if cache.exists(get_country_key(country)):
+    if cache.exists(_get_country_key(country)):
         print("cache has country")
-        json_string = cache.get(get_country_key(country)).decode("utf-8")
+        json_string = cache.get(_get_country_key(country)).decode("utf-8")
         data_object = json.loads(json_string)
         last_prediction_time  =  datetime.fromtimestamp(data_object["last_prediction"], tz=timezone.utc) 
         deadline_time =  deadline.astimezone(timezone.utc) # datetime.strptime("202308201230", "%Y%m%d%H%M").replace(tzinfo=timezone.utc)
@@ -43,17 +43,17 @@ def get_cache_or_update(country, start, deadline):
             # check if the last update has been at least one hour earlier, 
             if last_cache_update_time < current_time_plus_one:
                 print("cache must be updated")
-                return pull_data(country, start, deadline)
+                return _pull_data(country, start, deadline)
             else:
                 return data_object
     else:
-        print("caches has no country, calling pull_data(country, start, deadline)")
-        return pull_data(country, start, deadline)
+        print("caches has no country, calling _pull_data(country, start, deadline)")
+        return _pull_data(country, start, deadline)
 
 
-def pull_data(country, start, end):
+def _pull_data(country, start, end):
     """Fetches the data from ENTSOE and updated the cache"""
-    print("pull_data function started")
+    print("_pull_data function started")
     try:
         cache = redis.from_url(Config.get("energy_redis_path"))
         forecast_data = energy(country,start,end,"forecast")
@@ -75,7 +75,7 @@ def pull_data(country, start, end):
             "last_updated": int(last_update),
             "last_prediction": int(last_prediction),
         }
-        cache.set(get_country_key(country), json.dumps(cached_object))
+        cache.set(_get_country_key(country), json.dumps(cached_object))
         # print(
         #     "caching object with updated last_update key , result is %s",
         #     str(cached_object),
@@ -90,13 +90,13 @@ def pull_data(country, start, end):
 
 # ========= the main methods  ============
 
-def get_energy_data(country,start,end):
+def _get_energy_data(country,start,end):
     """
     Get energy data and check if it must be cached based on the options set 
     """
     if Config.get("enable_energy_caching")==True: 
         try :
-            forecast = get_cache_or_update(country, start, end)
+            forecast = _get_cache_or_update(country, start, end)
             forecast_data = pd.DataFrame(forecast["data"])
             return forecast_data
         except Exception as e :
@@ -128,7 +128,7 @@ def predict_now(country: str, estimated_runtime_hours: int, estimated_runtime_mi
         try:
             start_time = datetime.now()
             # print(start_time,hard_finish_date)
-            energy_data = get_energy_data(country,start_time,hard_finish_date)
+            energy_data = _get_energy_data(country,start_time,hard_finish_date)
             # print(energy_data)
             if energy_data is not None :
                 return predict_optimal_time(
@@ -139,12 +139,12 @@ def predict_now(country: str, estimated_runtime_hours: int, estimated_runtime_mi
                     hard_finish_date
                 )
             else:
-                return default_response(Message.ENERGY_DATA_FETCHING_ERROR)
+                return _default_response(Message.ENERGY_DATA_FETCHING_ERROR)
         except Exception as e:
             print(traceback.format_exc())
-            return default_response(Message.ENERGY_DATA_FETCHING_ERROR)
+            return _default_response(Message.ENERGY_DATA_FETCHING_ERROR)
     else:
-        return default_response(Message.INVALID_PREDICTION_CRITERIA)
+        return _default_response(Message.INVALID_PREDICTION_CRITERIA)
 
 # ======= Optimal prediction part =========    
 
@@ -180,20 +180,20 @@ def predict_optimal_time(
         if not isinstance(request_time,datetime):
             raise ValueError("Invalid request_time. it must be a datetime object")
     if energy_data is None:
-        return default_response(Message.NO_DATA,request_time)
+        return _default_response(Message.NO_DATA,request_time)
     if percent_renewable <= 0:
-        return default_response(Message.NEGATIVE_PERCENT_RENEWABLE,request_time)
+        return _default_response(Message.NEGATIVE_PERCENT_RENEWABLE,request_time)
     if estimated_runtime_hours <= 0:
         # since energy data is for 60 min interval, it does not make sense to optimize jobs less than an hour
-        return default_response(Message.INVALID_DATA,request_time)
+        return _default_response(Message.INVALID_DATA,request_time)
     if estimated_runtime_minutes < 0:
         # min val can be 0 
-        return default_response(Message.INVALID_DATA,request_time)
+        return _default_response(Message.INVALID_DATA,request_time)
     
     total_runtime_in_minutes = estimated_runtime_hours * 60 + estimated_runtime_minutes
 
     if total_runtime_in_minutes <= 0:
-        return default_response(Message.ZERO_OR_NEGATIVE_RUNTIME,request_time)
+        return _default_response(Message.ZERO_OR_NEGATIVE_RUNTIME,request_time)
         
     if request_time is not None:
       # request time is provided in local time zone, first convert to utc then use it 
@@ -218,7 +218,7 @@ def predict_optimal_time(
     print(req_time_utc,current_time_hour,estimated_finish_hour)
     # hard_finish_date is in local time zone  so it's converted to timestamp 
     if estimated_finish_time >= int(hard_finish_date.timestamp()):
-        return default_response(Message.RUNTIME_LONGER_THAN_DEADLINE_ALLOWS,request_time)
+        return _default_response(Message.RUNTIME_LONGER_THAN_DEADLINE_ALLOWS,request_time)
 
     # ========== the predication part ===========
     # this is to make the old code from the web repo compatible with the new one. TODO refine it 
@@ -230,7 +230,7 @@ def predict_optimal_time(
 
     # Possible that data has not been reported
     if my_predictions.shape[0] == 0:
-        return default_response(Message.NO_DATA,request_time)
+        return _default_response(Message.NO_DATA,request_time)
 
     my_predictions = my_predictions.reset_index()
     # needs to be computed every time, because when time runs, the number of
@@ -239,8 +239,8 @@ def predict_optimal_time(
     # time but for now it is easy
     time_units = (total_runtime_in_minutes // granularity) + 1
 
-    my_predictions = compute_percentages(my_predictions, percent_renewable)
-    my_predictions = compute_rolling_average(
+    my_predictions = _compute_percentages(my_predictions, percent_renewable)
+    my_predictions = _compute_rolling_average(
         my_predictions=my_predictions, time_units=time_units
     )
     # how many time units do I need to allocate?
@@ -293,24 +293,24 @@ def predict_optimal_time(
         "avg_percentage_renewable"
     ]:
         print("Return max percent")
-        return optimal_response(
+        return _optimal_response(
             my_predictions, potential_times["max_percentage"]["time_index"], time_units
         )
 
     # If there is a window which fulfills the request, return this window.
     if potential_times["requirement_fulfilled"]["time_index"] >= 0:
         print("returning requested timeslot")
-        return optimal_response(my_predictions, time_slot, time_units)
+        return _optimal_response(my_predictions, time_slot, time_units)
     elif potential_times["max_percentage"]["time_index"] >= 0:
         print("returning optimum")
 
-        return optimal_response(my_predictions, alternative_time, time_units)
+        return _optimal_response(my_predictions, alternative_time, time_units)
     else:
-        return optimal_response(my_predictions, 0, time_units)
+        return _optimal_response(my_predictions, 0, time_units)
 
 
-def optimal_response(my_predictions, time_slot, time_units):
-    # print("optimal_response function started, data/prediction.py")
+def _optimal_response(my_predictions, time_slot, time_units):
+    # print("_optimal_response function started, data/prediction.py")
     average_percent_renewable = my_predictions["percent_renewable"][
         time_slot : (time_slot + time_units)
     ].mean()
@@ -321,7 +321,7 @@ def optimal_response(my_predictions, time_slot, time_units):
     return timestamp, message, average_percent_renewable
 
 
-def default_response(message,request_time=None):
+def _default_response(message,request_time=None):
     average_percent_renewable = 0
     if request_time is None :
         timestamp = int(datetime.now(timezone.utc).timestamp())
@@ -331,7 +331,7 @@ def default_response(message,request_time=None):
     
     return timestamp, message, average_percent_renewable
 
-def compute_percentages(my_predictions, percent_renewable):
+def _compute_percentages(my_predictions, percent_renewable):
     """
     Compute the percentage of renewables requested.
     This creates a column with the cumulative number of timeslots
@@ -368,7 +368,7 @@ def compute_percentages(my_predictions, percent_renewable):
     return my_predictions
 
 
-def compute_rolling_average(
+def _compute_rolling_average(
     my_predictions: pd.DataFrame, time_units: int
 ) -> pd.DataFrame:
     """Compute the rolling average over the number of time units.

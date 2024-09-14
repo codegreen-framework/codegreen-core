@@ -24,7 +24,7 @@ https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf#page=
 
 import pandas as pd
 from ..utilities.metadata import get_country_energy_source, get_default_ci_value
-
+from ..data import energy
 base_carbon_intensity_values = {
     "codecarbon": {
         "values": {
@@ -109,7 +109,7 @@ def _calculate_weighted_sum(base,weight):
             + base.get("Solar",0)*weight.get("Solar_per",0)
             + base.get("Wind",0)*weight.get("Wind_per",0))/100,2)
 
-def calculate_carbon_intensity(energy_mix):
+def _calculate_ci_from_energy_mix(energy_mix):
     """
         This is to calculate the carbon intensity of the thing  TODO 
 
@@ -122,4 +122,29 @@ def calculate_carbon_intensity(energy_mix):
         values[str("ci_"+m)] = sum
     return values
 
+def calculate_from_energy_data(energy_data)-> pd.DataFrame:
+    """ 
+    Returns carbon intensity data calculated based on energy data (if available, else country default)
+    """
+    ci_values = energy_data.apply(lambda row: _calculate_ci_from_energy_mix(row.to_dict()),axis=1)
+    ci = pd.DataFrame(ci_values.tolist())
+    ci = pd.concat([ci,energy_data],axis=1)
+    ci["ci_default"] = ci["ci_ipcc_lifecycle_mean"]
+    return ci
 
+
+def calculate_for_country(country,start_time,end_time)-> pd.DataFrame:
+  """
+  Returns carbon intensity data calculated based on energy data (if available, else country default)
+  """
+  e_source = get_country_energy_source(country)
+  if e_source=="ENTSOE" :
+    energy_data = energy(country,start_time,end_time)
+    ci_values = calculate_from_energy_data(energy_data)
+    return ci_values
+  else:
+    time_series = pd.date_range(start=start_time, end=end_time, freq='H')
+    df = pd.DataFrame(time_series, columns=['startTimeUTC'])
+    df["ci_default"] = get_default_ci_value(country)
+    # TODO check same format for both cases
+    return df
