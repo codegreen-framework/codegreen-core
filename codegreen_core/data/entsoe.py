@@ -199,9 +199,14 @@ def _convert_date_to_entsoe_format(dt:datetime):
 
 def get_actual_production_percentage(country, start, end, interval60=False) -> pd.DataFrame:
     """Returns time series data containing the percentage of energy generated from various sources for the specified country within the selected time period. 
-    It also includes the percentage of energy from renewable and non renewable sources.
-    The data is sourced from the ENTSOE APIs and subsequently refined. 
+    It also includes the percentage of energy from renewable and non renewable sources. The data is fetched from the APIs is subsequently refined. 
     To obtain data in 60-minute intervals (if not already available), set 'interval60' to True
+
+    :param str country: The 2 alphabet country code.
+    :param datetime start: The start date for data retrieval. A Datetime object. Note that this date will be rounded to the nearest hour.
+    :param datetime end: The end date for data retrieval. A datetime object. This date is also rounded to the nearest hour.
+    :return: A DataFrame containing the hourly energy production mix and percentage of energy generated from renewable and non renewable sources.
+    :rtype: pd.DataFrame
     """
     options = {"country": country, "start": start,"end": end, "interval60": interval60}
     # get actual generation data per production type and convert it into 60 min interval if required
@@ -251,9 +256,15 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> p
 def get_forecast_percent_renewable(country:str, start:datetime, end:datetime) -> pd.DataFrame:
     """Returns time series data  comprising the forecast of the percentage of energy generated from 
     renewable sources (specifically, wind and solar) for the specified country within the selected time period. 
+    
     - The data source is the  ENTSOE APIs and involves combining data from 2 APIs : total forecast, wind and solar forecast.
     - The time interval is 60 min
     - the data frame includes : startTimeUTC, totalRenewable,total,percent_renewable,posix_timestamp
+    
+    :param str country: The 2 alphabet country code.
+    :param datetime start: The start date for data retrieval. A Datetime object. Note that this date will be rounded to the nearest hour.
+    :param datetime end: The end date for data retrieval. A datetime object. This date is also rounded to the nearest hour.
+    :return: A DataFrame containing startTimeUTC, totalRenewable,total,percent_renewable,posix_timestamp. 
     """
     try:
         # print(country,start,end)
