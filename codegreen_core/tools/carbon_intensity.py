@@ -1,30 +1,7 @@
-"""
-Note : 1 kg = 1000 grams and 1MWh = 1000 kWh. This means, 1 kg/MWh = 1 kg/(kWh * 1000 )  = 1000 g/ (kWH * 1000) ....(both 1000 cancel each other out) => 1kg/MWh = 1g/kWh         
-
-IPCC values
-
- ============= ============================================================= ====== ====== ====== 
-  type          average of                                                    min    mean   max   
- ============= ============================================================= ====== ====== ====== 
-  coal          Coal—PC                                                       740    820    910   
-  natural gas   Gas—Combined Cycle                                            410    490    650   
-  biogas        Biomass—cofiring,Biomass—dedicated                            375    485    655   
-  geothermal    Geothermal                                                    6      38     79    
-  hydropower    Hydropower                                                    1      24     2200  
-  nuclear       Nuclear                                                       3.7    12     110   
-  solar         Concentrated Solar Power, Solar PV—rooftop,Solar PV—utility   17.6   38.6   101   
-  wind          Wind onshore, Wind offshore                                   7.5    11.5   45.5  
- ============= ============================================================= ====== ====== ====== 
-
-
-
-https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf#page=7
-
-"""
-
 import pandas as pd
 from ..utilities.metadata import get_country_energy_source, get_default_ci_value
 from ..data import energy
+from datetime import datetime
 base_carbon_intensity_values = {
     "codecarbon": {
         "values": {
@@ -97,23 +74,22 @@ base_carbon_intensity_values = {
 def _calculate_weighted_sum(base,weight):
     """
     Assuming weight are in percentage
+    weignt and base are dictionaries with the same keys  
     """
     return round((
-              base.get("Coal",0)*weight.get("Coal_per",0) 
-            + base.get("Petroleum",0)*weight.get("Petroleum_per",0)
-            + base.get("Biomass",0)*weight.get("Biomass_per",0)
-            + base.get("Natural Gas",0)*weight.get("Natural Gas_per",0)
-            + base.get("Geothermal",0)*weight.get("Geothermal_per",0)
-            + base.get("Hydroelectricity",0)*weight.get("Hydroelectricity_per",0)
-            + base.get("Nuclear",0)*weight.get("Nuclear_per",0)
-            + base.get("Solar",0)*weight.get("Solar_per",0)
-            + base.get("Wind",0)*weight.get("Wind_per",0))/100,2)
+              base.get("Coal",0)* weight.get("Coal_per",0) 
+            + base.get("Petroleum",0) * weight.get("Petroleum_per",0)
+            + base.get("Biomass",0) * weight.get("Biomass_per",0)
+            + base.get("Natural Gas",0) * weight.get("Natural Gas_per",0)
+            + base.get("Geothermal",0) * weight.get("Geothermal_per",0)
+            + base.get("Hydroelectricity",0) * weight.get("Hydroelectricity_per",0)
+            + base.get("Nuclear",0) * weight.get("Nuclear_per",0)
+            + base.get("Solar",0) * weight.get("Solar_per",0)
+            + base.get("Wind",0) * weight.get("Wind_per",0))/100,2)
 
 def _calculate_ci_from_energy_mix(energy_mix):
     """
-        This is to calculate the carbon intensity of the thing  TODO 
-
-        :params energy_mix:
+        To calculate multiple CI values for a data frame row (for the `apply` method)
     """
     methods = ["codecarbon","ipcc_lifecycle_min","ipcc_lifecycle_mean","ipcc_lifecycle_mean","ipcc_lifecycle_max","eu_comm"]
     values = {}
@@ -122,29 +98,48 @@ def _calculate_ci_from_energy_mix(energy_mix):
         values[str("ci_"+m)] = sum
     return values
 
-def calculate_from_energy_data(energy_data)-> pd.DataFrame:
-    """ 
-    Returns carbon intensity data calculated based on energy data (if available, else country default)
-    """
-    ci_values = energy_data.apply(lambda row: _calculate_ci_from_energy_mix(row.to_dict()),axis=1)
-    ci = pd.DataFrame(ci_values.tolist())
-    ci = pd.concat([ci,energy_data],axis=1)
-    ci["ci_default"] = ci["ci_ipcc_lifecycle_mean"]
-    return ci
-
-
-def calculate_for_country(country,start_time,end_time)-> pd.DataFrame:
+def compute_ci(country:str,start_time:datetime,end_time:datetime)-> pd.DataFrame:
   """
-  Returns carbon intensity data calculated based on energy data (if available, else country default)
+  Computes carbon intensity data for a given country and time period.
+
+  If energy data is available, the carbon intensity is calculated from actual energy data for the specified  time range. 
+  If energy data is not available for the country, a default carbon intensity value is used instead.
+  The default CI values for all countries are stored in utilities/ci_default_values.csv. 
+
   """
   e_source = get_country_energy_source(country)
   if e_source=="ENTSOE" :
     energy_data = energy(country,start_time,end_time)
-    ci_values = calculate_from_energy_data(energy_data)
+    ci_values = compute_ci_from_energy(energy_data)
     return ci_values
   else:
     time_series = pd.date_range(start=start_time, end=end_time, freq='H')
     df = pd.DataFrame(time_series, columns=['startTimeUTC'])
     df["ci_default"] = get_default_ci_value(country)
-    # TODO check same format for both cases
     return df
+
+def compute_ci_from_energy(energy_data:pd.DataFrame,default_method="ci_ipcc_lifecycle_mean",base_values:dict=None)-> pd.DataFrame:
+    """ 
+    Given the energy time series, computes the Carbon intensity for each row. 
+    You can choose the base value from several sources available or use your own base values
+    
+    :param energy_data: The data frame must include the following columns : `Coal_per, Petroleum_per, Biomass_per, Natural Gas_per, Geothermal_per, Hydroelectricity_per, Nuclear_per, Solar_per, Wind_per`
+    :param default_method: This option is to choose the base value of each energy source. By default, IPCC_lifecycle_mean values are used. List of all options:     
+        
+        - `codecarbon` (Ref [6])
+        - `ipcc_lifecycle_min` (Ref [5])
+        - `ipcc_lifecycle_mean` (default)
+        - `ipcc_lifecycle_max`
+        - `eu_comm` (Ref [4])
+    :param base_values: Custom base Carbon Intensity values of energy sources. Must include following keys :  `Coal, Petroleum, Biomass, Natural Gas, Geothermal, Hydroelectricity, Nuclear, Solar, Wind`
+
+    """
+    if base_values:
+        energy_data['ci_default'] = energy_data.apply(lambda row: _calculate_weighted_sum(row.to_dict(),base_values), axis=1)
+        return energy_data
+    else:
+        ci_values = energy_data.apply(lambda row: _calculate_ci_from_energy_mix(row.to_dict()),axis=1)
+        ci = pd.DataFrame(ci_values.tolist())
+        ci = pd.concat([ci,energy_data],axis=1)
+        ci["ci_default"] = ci[default_method]
+        return ci

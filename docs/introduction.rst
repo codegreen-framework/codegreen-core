@@ -24,6 +24,7 @@ The codegreen-core package offers tools to collect time series data of the energ
    :alt: Germany example 1
    :width: 600px  
    :align: center  
+
 The figure above shows the percentage of energy generated from renewable (green) and non renewable (red) sources in Germany on 1st and 2nd June 2024.
 
 This data helps analyze the energy production in a country over a period of time to  identify patterns and compare energy data for  multiple countries. 
@@ -32,6 +33,7 @@ This data helps analyze the energy production in a country over a period of time
    :alt: Multiple example 1
    :width: 800px  
    :align: center 
+
 The figure above shows the percentage of energy generated from renewable sources in four countries (Germany, France, Italy, and Spain) from June 1 to June 24, 2024.
 
 An interesting observation is that the amount of green energy changes almost every hour. This presents two approaches to reducing carbon emissions:
@@ -49,6 +51,7 @@ Given the time taken by a computational task, the location where it was performe
    :alt: CE DE example 1
    :width: 600px  
    :align: center 
+
 The figure above shows the carbon emissions produced by a 12-hour computational task performed on 124 cores with 64 GB of memory in Germany
 
 
@@ -60,6 +63,7 @@ Given the approximate run time of the task, the hardware specifications, the loc
    :alt: optimal eg 1
    :width: 800px  
    :align: center 
+
 The figure above shows the carbon emissions produced by an 8-hour computational task performed on 124 cores with 64 GB of memory in Italy, along with the potential savings in carbon emissions when the computation is started at suggested times using three different criteria (values of percentage renewable energy).
 
 
@@ -72,11 +76,3 @@ Next step
 ----------
 
 See the  Getting started guide for installation and setup.
-
-
-References
------------
-
-- [1] J. Malmodin, N. Lövehagen, P. Bergmark, and D. Lundén, ‘ICT sector electricity consumption and greenhouse gas emissions – 2020 outcome’, Telecommunications Policy, vol. 48, no. 3, p. 102701, Apr. 2024, doi: 10.1016/j.telpol.2023.102701.
-- [2] E. Strubell, A. Ganesh, and A. McCallum, ‘Energy and Policy Considerations for Deep Learning in NLP’, Jun. 05, 2019, arXiv: arXiv:1906.02243. Accessed: Oct. 11, 2024. [Online]. Available: http://arxiv.org/abs/1906.02243
-

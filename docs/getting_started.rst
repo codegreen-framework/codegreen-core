@@ -26,11 +26,6 @@ You can also use clone the git repository and install the package :
 Setup 
 -------
 
-After you have successfully installed the package, the next step is to create a configuration file. 
-- Create a new file `.codegreencore.config` in your root directory.
-- This file will contains all the configruations required to run the packages successfully.
-- Here is a template for the config file :
-
 After successfully installing the package, the next step is to create a configuration file:
 
 - Create a new file named `.codegreencore.config`` in your root directory.
@@ -61,11 +56,11 @@ Package Organization
    :align: center 
 
 
-The package is divided into two main modules: `data`` and `tools`. (There is also an additional module, `utilities`, which provides helper methods that support other modules.)
+The package is divided into two main sub packages: `data`` and `tools`. (There is also an additional module, `utilities`, which provides helper methods that support other modules.)
 
-The `data`` module contains methods for fetching energy production data. This package relies on external data sources to retrieve this information, which is then processed to make it usable by other components of the package. For more details and a complete API , see the data module documentation.
+The `data` sub package contains methods for fetching energy production data. This package relies on external data sources to retrieve this information, which is then processed to make it usable by other components of the package. For more details and a complete API , see the data module documentation.
 
-The `tools`` module provides a variety of tools, including:
+The `tools` sub package provides a variety of tools, including:
 
 - Carbon intensity calculator
 - Carbon emission calculator
@@ -99,5 +94,4 @@ Assuming all the above steps are done, you can now calculate the optimal startin
                     criteria,
                     per_renewable)
   # (1728640800.0, <Message.OPTIMAL_TIME: 'OPTIMAL_TIME'>, 76.9090909090909)
-
   

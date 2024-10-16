@@ -14,6 +14,7 @@ Welcome to codegreen_core's documentation!
    getting_started
    data
    tools
+   references
    version_history
 
 
