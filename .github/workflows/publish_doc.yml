@@ -52,7 +52,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: site
+          name: github-pages
           path: ./build/html  # Ensure this is the correct path
 
   deploy:
@@ -66,7 +66,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: site
+          name: github-pages
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
