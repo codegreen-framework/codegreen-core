@@ -42,7 +42,7 @@ jobs:
           make html  # Assuming your docs are configured to build HTML
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: site
           path: ./build/html  # Ensure this is the correct path
