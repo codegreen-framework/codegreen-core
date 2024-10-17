@@ -31,7 +31,7 @@ jobs:
           echo "enable_energy_caching=false" >> docs/.codegreencore.config
       - name: Verify .config file
         run: |
-        cat docs/.codegreencore.config
+          cat docs/.codegreencore.config
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
