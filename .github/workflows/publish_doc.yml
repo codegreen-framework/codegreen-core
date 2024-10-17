@@ -21,12 +21,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.12.5'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install sphinx  # Install Sphinx and theme if needed
+          pip install sphinx=7.4.7  # Install Sphinx and theme if needed
 
       - name: Build Sphinx Docs
         run: |
@@ -47,7 +47,7 @@ jobs:
 
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: site
 
