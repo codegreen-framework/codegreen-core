@@ -6,7 +6,7 @@ import pandas as pd
 from ..utilities.message import Message
 from ..utilities.log import time_prediction as log_time_prediction
 from ..utilities.metadata import get_country_energy_source
-from ..data import  entsoe as e # get_forecast_percent_renewable,get_current_date_entsoe_format,add_hours_to_entsoe_data
+from ..data import  entsoe as e 
 from ..data import energy 
 from ..utilities.config import Config
 import redis
@@ -105,7 +105,13 @@ def _get_energy_data(country,start,end):
         forecast =   energy(country,start,end,"forecast")
         return forecast["data"]
 
-def predict_now(country: str, estimated_runtime_hours: int, estimated_runtime_minutes:int, hard_finish_date:datetime, criteria:str = "percent_renewable", percent_renewable: int = 50)->tuple:
+def predict_now(
+        country: str, 
+        estimated_runtime_hours: int, 
+        estimated_runtime_minutes:int,
+        hard_finish_date:datetime, 
+        criteria:str = "percent_renewable", 
+        percent_renewable: int = 50)->tuple:
     """
     Predicts optimal computation time in the given location starting now 
 
@@ -117,7 +123,7 @@ def predict_now(country: str, estimated_runtime_hours: int, estimated_runtime_mi
     :type estimated_runtime_minutes: int
     :param hard_finish_date: The latest possible finish time for the task. Datetime object in local time zone 
     :type hard_finish_date: datetime
-    :param criteria: Criteria based on which optimal time is calculated. Valid value "percent_renewable"
+    :param criteria: Criteria based on which optimal time is calculated. Valid value "percent_renewable" or "optimal_percent_renewable"
     :type criteria: str
     :param percent_renewable: The minimum percentage of renewable energy desired during the runtime
     :type percent_renewable: int    
@@ -138,6 +144,42 @@ def predict_now(country: str, estimated_runtime_hours: int, estimated_runtime_mi
                     percent_renewable,
                     hard_finish_date
                 )
+            else:
+                return _default_response(Message.ENERGY_DATA_FETCHING_ERROR)
+        except Exception as e:
+            print(traceback.format_exc())
+            return _default_response(Message.ENERGY_DATA_FETCHING_ERROR)
+    if criteria == "optimal_percent_renewable":
+        try:
+            start_time = datetime.now()
+            # print(start_time,hard_finish_date)
+            energy_data = _get_energy_data(country,start_time,hard_finish_date)
+            if energy_data is not None :
+                print(energy_data)
+                col = energy_data['percent_renewable']
+                pers = []
+                pers.append(col.mean())
+                pers.append(col.max())
+                pers.append(col.nlargest(2).iloc[-1])
+                pers.append(col.nlargest(3).iloc[-1])
+                pers.append(col.nlargest(4).iloc[-1])
+                print(pers)
+                results = []
+                for p in pers : 
+                    q = predict_optimal_time(
+                        energy_data,
+                        estimated_runtime_hours,
+                        estimated_runtime_minutes,
+                        p,
+                        hard_finish_date
+                    )
+                    results.append(q)
+                print(results)
+                max_index, max_tuple = max(enumerate(results), key=lambda x: x[1][0])
+                print(max_index)
+                print(max_tuple)
+                optimal = max_tuple + (round(pers[max_index],2),)
+                return optimal
             else:
                 return _default_response(Message.ENERGY_DATA_FETCHING_ERROR)
         except Exception as e:

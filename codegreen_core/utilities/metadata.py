@@ -1,9 +1,3 @@
-"""
-TODO Describe the format of country_list.json file here
-
-"""
-
-
 import json 
 import pandas as pd
 from pathlib import Path

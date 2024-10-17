@@ -25,8 +25,7 @@ exclude_patterns = []
 
 autodoc_mock_imports = ["redis","pandas","entsoe","dateutil","tensorflow","numpy","sklearn"]
 
-extensions = ['sphinx.ext.autodoc','docs._extensions.country_table_extension']
-
+extensions = ['sphinx.ext.autodoc','docs._extensions.country_table_extension','sphinx.ext.mathjax']
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
