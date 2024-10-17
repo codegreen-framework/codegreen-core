@@ -29,9 +29,14 @@ jobs:
           echo "[codegreen]" > docs/.codegreencore.config
           echo "ENTSOE_token=${{ secrets.ENTSOE_TOKEN }}" >> docs/.codegreencore.config
           echo "enable_energy_caching=false" >> docs/.codegreencore.config
+      - name: Generate .config file
+        run: |
+          echo "[codegreen]" > .codegreencore.config
+          echo "ENTSOE_token=${{ secrets.ENTSOE_TOKEN }}" >> .codegreencore.config
+          echo "enable_energy_caching=false" >> .codegreencore.config
       - name: Verify .config file
         run: |
-          cat docs/.codegreencore.config
+          cat .codegreencore.config
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -41,6 +46,8 @@ jobs:
       - name: Build Sphinx Docs
         run: |
           make html  
+      - name: List files in build directory
+        run: ls -R ./build/html
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -62,4 +69,4 @@ jobs:
           name: site
 
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
