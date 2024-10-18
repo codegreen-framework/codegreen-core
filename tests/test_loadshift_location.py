@@ -40,4 +40,4 @@ def test_locations():
     a,b,c,d = predict_optimal_location(data,case["h"],case["m"],case["p"],end,start)
     print(a,b,c,d)
 
-test_locations()
+# test_locations()

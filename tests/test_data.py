@@ -1,5 +1,6 @@
 import pytest
-from codegreen_core.data import entsoe,energy,carbon_intensity
+from codegreen_core.data import energy
+from codegreen_core.data.entsoe import renewableSources
 from codegreen_core.utilities.message import CodegreenDataError
 from datetime import datetime
 import pandas as pd
@@ -84,7 +85,7 @@ class TestEnergyData:
         end_utc =  pd.to_datetime(case["end"]) #case["end"].astimezone(pd.Timestamp.now(tz='UTC').tzinfo) if case["end"].tzinfo is None else case["end"]
         filtered_df = data_verify[(data_verify['start_date'] >= start_utc) & (data_verify['start_date'] < end_utc)]
         allCols = data.columns.tolist()
-        renPresent = list(set(allCols).intersection(entsoe.renewableSources))
+        renPresent = list(set(allCols).intersection(renewableSources))
         for e in renPresent:
           difference = filtered_df[e+"  - Actual Aggregated [MW]"] - data[e]
           sum_of_differences = difference.sum()

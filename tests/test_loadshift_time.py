@@ -1,4 +1,3 @@
-import codegreen_core.tools as tools
 import pytest
 from codegreen_core.utilities.message import CodegreenDataError,Message
 from datetime import datetime,timezone,timedelta
@@ -179,17 +178,17 @@ class TestOptimalTimeCore:
     print(timestamp1,timestamp, message)
     assert timestamp - timestamp1 <= 10 
     assert message ==  Message.ENERGY_DATA_FETCHING_ERROR
-  def test_all_country_test(self):
-    test_cases = pd.read_csv("./data/test_cases_time.csv")
-    data = pd.read_csv("./data/prediction_testing_data.csv")
-    for index, row in test_cases.iterrows():
-      edata_filter = data["file_id"] == row["country"]
-      energy_data = data[edata_filter].copy()
-      start = datetime.strptime(row["start_time"], '%Y-%m-%d %H:%M:%S')
-      end = (start + timedelta(hours=row["hard_deadline_hour"]))
-      a,b,c = ts.predict_optimal_time(energy_data,row["runtime_hour"],row["runtime_min"],row["percent_renewable"],end,start)
-      print(a,b,c)
-      assert int(a) ==  row["expected_timestamp"]
+  # def test_all_country_test(self):
+  #   test_cases = pd.read_csv("./data/test_cases_time.csv")
+  #   data = pd.read_csv("./data/prediction_testing_data.csv")
+  #   for index, row in test_cases.iterrows():
+  #     edata_filter = data["file_id"] == row["country"]
+  #     energy_data = data[edata_filter].copy()
+  #     start = datetime.strptime(row["start_time"], '%Y-%m-%d %H:%M:%S')
+  #     end = (start + timedelta(hours=row["hard_deadline_hour"]))
+  #     a,b,c = ts.predict_optimal_time(energy_data,row["runtime_hour"],row["runtime_min"],row["percent_renewable"],end,start)
+  #     print(a,b,c)
+  #     assert int(a) ==  row["expected_timestamp"]
 
     # for case in cases:
     #   #print(case)
@@ -218,7 +217,7 @@ def test_all_country():
       assert int(a) ==  row["expected_timestamp"]
       print("====")
 
-test_all_country()
+# test_all_country()
 
 
 # def data_validation_country():
