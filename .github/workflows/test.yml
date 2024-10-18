@@ -35,9 +35,9 @@ jobs:
     # Run pytest to execute tests
     - name: Generate .config file inside the test folder
       run: |
-          echo "[codegreen]" > tests/.codegreencore.config
-          echo "ENTSOE_token=${{ secrets.ENTSOE_TOKEN }}" >> tests/.codegreencore.config
-          echo "enable_energy_caching=false" >> tests/.codegreencore.config    
+          echo "[codegreen]" > .codegreencore.config
+          echo "ENTSOE_token=${{ secrets.ENTSOE_TOKEN }}" >> .codegreencore.config
+          echo "enable_energy_caching=false" >> .codegreencore.config    
     - name: Run tests
       run: |
         pytest
