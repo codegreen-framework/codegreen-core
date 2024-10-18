@@ -68,13 +68,13 @@ class TestOptimalTimeCore:
 
   def test_if_incorrect_data_provided(self):
     """this is to test if  energy data provided does not contain the data for the request time """
-    data = pd.read_csv("data/DE_forecast1.csv")
+    data = pd.read_csv("tests/data/DE_forecast1.csv")
     timestamp, message, average_percent_renewable = ts.predict_optimal_time(data,20,0,10,self.hard_finish_time_2,self.request_time_2)
     assert timestamp == int(self.request_time_2.timestamp())
     assert message == Message.NO_DATA
 
   def test_multiple(self):
-    data = pd.read_csv("data/DE_forecast1.csv")
+    data = pd.read_csv("tests/data/DE_forecast1.csv")
     hard_finish_time = datetime(2024,1,7,0,0)
     request_time = datetime(2024,1,5,0,0)
     cases = [
@@ -200,8 +200,8 @@ class TestOptimalTimeCore:
 
 # test if request time is none current time is being used 
 def test_all_country():
-    test_cases = pd.read_csv("./data/test_cases_time.csv")
-    data = pd.read_csv("./data/prediction_testing_data.csv")
+    test_cases = pd.read_csv("tests/data/test_cases_time.csv")
+    data = pd.read_csv("tests/data/prediction_testing_data.csv")
     for _ , row in test_cases.iterrows():
       print(row)
       edata_filter = data["file_id"] == row["country"]

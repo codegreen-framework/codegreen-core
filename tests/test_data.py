@@ -33,7 +33,7 @@ class TestEnergyData:
         "start":datetime(2024,2,1),
         "end":datetime(2024,2,2),
         "dtype": 'generation' ,
-        "file": "data/generation_DE_24_downloaded.csv",
+        "file": "tests/data/generation_DE_24_downloaded.csv",
         "interval60": False
       },
       {
@@ -41,7 +41,7 @@ class TestEnergyData:
         "start":datetime(2024,3,20),
         "end":datetime(2024,3,24),
         "dtype": 'generation' ,
-        "file": "data/generation_DE_24_downloaded.csv",
+        "file": "tests/data/generation_DE_24_downloaded.csv",
         "interval60": False
       },
       # {
@@ -58,7 +58,7 @@ class TestEnergyData:
         "start":datetime(2024,3,20),
         "end":datetime(2024,3,24),
         "dtype": 'generation' ,
-        "file": "data/generation_GR_24_downloaded.csv",
+        "file": "tests/data/generation_GR_24_downloaded.csv",
         "interval60": True
       },
       {
@@ -66,7 +66,7 @@ class TestEnergyData:
         "start":datetime(2024,1,25),
         "end":datetime(2024,1,28),
         "dtype": 'generation' ,
-        "file": "data/generation_GR_24_downloaded.csv",
+        "file": "tests/data/generation_GR_24_downloaded.csv",
         "interval60": True
       }
 

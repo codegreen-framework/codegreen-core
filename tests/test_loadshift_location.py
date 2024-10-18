@@ -10,7 +10,7 @@ def test_location_now():
 # test_location_now()
 
 def fetch_data(month_no,countries):
-  data = pd.read_csv("data/prediction_testing_data.csv")
+  data = pd.read_csv("tests/data/prediction_testing_data.csv")
   forecast_data = {}
   for c in countries:
     filter = data["file_id"] == c+""+str(month_no)
