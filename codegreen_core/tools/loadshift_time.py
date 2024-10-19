@@ -4,114 +4,53 @@ import numpy as np
 import pandas as pd
 # from greenerai.api.data.utils import Message
 from ..utilities.message import Message
-from ..utilities.log import time_prediction as log_time_prediction
-from ..utilities.metadata import get_country_energy_source
-from ..data import  entsoe as e 
+from ..utilities.metadata import check_prediction_model_exists
+from ..utilities.caching import get_cache_or_update
 from ..data import energy 
+from ..models.predict import predicted_energy 
 from ..utilities.config import Config
 import redis
 import json
 import traceback
-
-# ======= Caching energy data in redis ============
-def _get_country_key(country_code):
-    return "codegreen_optimal_"+country_code
-
-def _get_cache_or_update(country, start, deadline):
-    """
-    The cache contains an entry for every country. It holds the country code,
-    the last update time, the timestamp of the last entry and the data time series.
-
-    The function first checks if the requested final time stamp is available, if not
-    it attempts to pull the data from ENTSOE, if the last update time is at least one hour earlier.
-    """
-    print("_get_cache_or_update started")
-    cache = redis.from_url(Config.get("energy_redis_path"))
-    if cache.exists(_get_country_key(country)):
-        print("cache has country")
-        json_string = cache.get(_get_country_key(country)).decode("utf-8")
-        data_object = json.loads(json_string)
-        last_prediction_time  =  datetime.fromtimestamp(data_object["last_prediction"], tz=timezone.utc) 
-        deadline_time =  deadline.astimezone(timezone.utc) # datetime.strptime("202308201230", "%Y%m%d%H%M").replace(tzinfo=timezone.utc)
-        last_cache_update_time = datetime.fromtimestamp(data_object["last_updated"], tz=timezone.utc) 
-        current_time_plus_one = datetime.now(timezone.utc)+timedelta(hours=-1)
-        # utc_dt = utc_dt.astimezone(timezone.utc)  
-        # print(data_object)
-        if data_object["data_available"] and last_prediction_time > deadline_time:
-            return data_object
-        else:
-            # check if the last update has been at least one hour earlier, 
-            if last_cache_update_time < current_time_plus_one:
-                print("cache must be updated")
-                return _pull_data(country, start, deadline)
-            else:
-                return data_object
-    else:
-        print("caches has no country, calling _pull_data(country, start, deadline)")
-        return _pull_data(country, start, deadline)
-
-
-def _pull_data(country, start, end):
-    """Fetches the data from ENTSOE and updated the cache"""
-    print("_pull_data function started")
-    try:
-        cache = redis.from_url(Config.get("energy_redis_path"))
-        forecast_data = energy(country,start,end,"forecast")
-        # print(forecast_data)
-        last_update = datetime.now().timestamp()
-        if forecast_data["data_available"]:
-            last_prediction = forecast_data["data"].iloc[-1]["posix_timestamp"]
-        else:
-            last_prediction = pd.Timestamp(datetime.now(), tz="UTC")
-        # print(last_prediction)
-        # forecast_data["data"]["startTimeUTC"] = forecast_data["data"]['startTimeUTC'].dt.strftime('%Y%m%d%H%M').astype("str")
-        df = forecast_data["data"]
-        df['startTimeUTC'] = pd.to_datetime(df['startTimeUTC'])
-        df['startTimeUTC'] = df['startTimeUTC'].dt.strftime('%Y%m%d%H%M').astype("str")
-        cached_object = {
-            "data": df.to_dict(),
-            "time_interval": forecast_data["time_interval"],
-            "data_available": forecast_data["data_available"],
-            "last_updated": int(last_update),
-            "last_prediction": int(last_prediction),
-        }
-        cache.set(_get_country_key(country), json.dumps(cached_object))
-        # print(
-        #     "caching object with updated last_update key , result is %s",
-        #     str(cached_object),
-        # )
-        return cached_object
-
-    except Exception as e:
-        print(traceback.format_exc())
-        print(e)
-        return None
-
-
 # ========= the main methods  ============
 
 def _get_energy_data(country,start,end):
     """
     Get energy data and check if it must be cached based on the options set 
+
+    Check the country data file if models exists
     """
+    energy_mode = Config.get("default_energy_mode")
+
     if Config.get("enable_energy_caching")==True: 
+        # check prediction is enabled : get cache or update prediction 
         try :
-            forecast = _get_cache_or_update(country, start, end)
+            # what if this fails ?
+            forecast = get_cache_or_update(country, start, end,energy_mode)
             forecast_data = pd.DataFrame(forecast["data"])
             return forecast_data
         except Exception as e :
             print(traceback.format_exc())
     else: 
-        forecast =   energy(country,start,end,"forecast")
+        if energy_mode =="local_prediction":
+            if check_prediction_model_exists(country):
+                forecast = predicted_energy(country)
+            else:
+                # prediction models do not exists , fallback to energy forecasts from public_data
+                forecast = energy(country,start,end,"forecast")
+        elif energy_mode == "public_data":
+            forecast = energy(country,start,end,"forecast")
+        else :
+            return None
         return forecast["data"]
 
 def predict_now(
-        country: str, 
-        estimated_runtime_hours: int, 
-        estimated_runtime_minutes:int,
-        hard_finish_date:datetime, 
-        criteria:str = "percent_renewable", 
-        percent_renewable: int = 50)->tuple:
+    country: str, 
+    estimated_runtime_hours: int, 
+    estimated_runtime_minutes:int,
+    hard_finish_date:datetime, 
+    criteria:str = "percent_renewable", 
+    percent_renewable: int = 50)->tuple:
     """
     Predicts optimal computation time in the given location starting now 
 
@@ -144,42 +83,6 @@ def predict_now(
                     percent_renewable,
                     hard_finish_date
                 )
-            else:
-                return _default_response(Message.ENERGY_DATA_FETCHING_ERROR)
-        except Exception as e:
-            print(traceback.format_exc())
-            return _default_response(Message.ENERGY_DATA_FETCHING_ERROR)
-    if criteria == "optimal_percent_renewable":
-        try:
-            start_time = datetime.now()
-            # print(start_time,hard_finish_date)
-            energy_data = _get_energy_data(country,start_time,hard_finish_date)
-            if energy_data is not None :
-                print(energy_data)
-                col = energy_data['percent_renewable']
-                pers = []
-                pers.append(col.mean())
-                pers.append(col.max())
-                pers.append(col.nlargest(2).iloc[-1])
-                pers.append(col.nlargest(3).iloc[-1])
-                pers.append(col.nlargest(4).iloc[-1])
-                print(pers)
-                results = []
-                for p in pers : 
-                    q = predict_optimal_time(
-                        energy_data,
-                        estimated_runtime_hours,
-                        estimated_runtime_minutes,
-                        p,
-                        hard_finish_date
-                    )
-                    results.append(q)
-                print(results)
-                max_index, max_tuple = max(enumerate(results), key=lambda x: x[1][0])
-                print(max_index)
-                print(max_tuple)
-                optimal = max_tuple + (round(pers[max_index],2),)
-                return optimal
             else:
                 return _default_response(Message.ENERGY_DATA_FETCHING_ERROR)
         except Exception as e:
