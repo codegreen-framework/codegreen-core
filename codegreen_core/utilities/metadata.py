@@ -49,6 +49,8 @@ def get_prediction_model_details(country,version=None):
   metadata = get_country_metadata()
   if country in metadata.keys():
     if version is None :
+      if len(metadata[country]["models"])==0:
+        raise("No models exists")
       return metadata[country]["models"][len(metadata[country]["models"])-1]
     else:
       filter = next([d for d in metadata[country]["models"]],None)
@@ -56,4 +58,13 @@ def get_prediction_model_details(country,version=None):
         raise "Version does not exists"
       return filter
   else:
-    raise "No models exists for this country"
+    raise "Country not defined"
+  
+
+def check_prediction_model_exists(country):
+  """Checks if predication models exists for the give country"""
+  try:
+    m = get_prediction_model_details(country)
+    return m is not None
+  except Exception as e:
+    return False

@@ -171,6 +171,6 @@ tests/data1
 
 # temp, will remove later
 codegreen_core/models/files
-codegreen_core/utilities/log.py
-
+Dockerfile
 .vscode
+poetry.lock

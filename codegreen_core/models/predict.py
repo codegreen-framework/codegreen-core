@@ -11,10 +11,13 @@ from ..utilities.metadata import get_prediction_model_details
 
 # Path to the models directory
 models_dir = Path(__file__).parent / "files"
- 
+
+def predicted_energy(country):
+    # do the forecast from now , same return format as data.energy 
+    return {"data":None}
 
 # Function to load a specific model by name
-def load_prediction_model(country,version=None):
+def _load_prediction_model(country,version=None):
     """Load a model by name"""
     model_details = get_prediction_model_details(country,version)
     model_path = models_dir / model_details["name"]
@@ -25,7 +28,7 @@ def load_prediction_model(country,version=None):
     return load_model(model_path,compile=False)
 
 
-def run(country,input,model_version=None):
+def _run(country,input,model_version=None):
     """Returns the prediction values"""
     
     seq_length = len(input)

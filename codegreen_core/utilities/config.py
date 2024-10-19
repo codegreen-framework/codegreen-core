@@ -8,7 +8,8 @@ class ConfigError(Exception):
 class Config:
   config_data = None
   section_name="codegreen"
-  boolean_keys = {"enable_energy_caching","enable_prediction_models","enable_time_prediction_logging"}
+  boolean_keys = {"enable_energy_caching","enable_time_prediction_logging"}
+  defaults = {"default_energy_mode":"public_data","enable_energy_caching":False}
   @classmethod
   def load_config(self,file_path=None):
     """ to load configurations from the user config file 
@@ -35,7 +36,6 @@ class Config:
       else:
         r = redis.from_url(self.get("energy_redis_path"))
         r.ping()
-        # print("Redis pinged")
   
   @classmethod    
   def get(self,key):
@@ -43,8 +43,13 @@ class Config:
       raise ConfigError("Configuration not loaded. Please call 'load_config' first.")
     try:
       value = self.config_data.get(self.section_name,key)  
-      if key in self.boolean_keys:
-        value = value.lower() == "true"
+      if value is None:
+        #if key not in self.defaults:
+        #    raise KeyError(f"No default value provided for key: {key}")
+        value =  self.defaults.get(key,None)
+      else:
+        if key in self.boolean_keys:
+          value = value.lower() == "true"
       return value
     except (configparser.NoSectionError, configparser.NoOptionError):
       return None
