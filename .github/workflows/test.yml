@@ -1,0 +1,43 @@
+name: Run Tests on main
+
+# Trigger this workflow when pushing to the main branch
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Define the job to run the tests
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the code from the repository
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Set up Python environment
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12.5'  # Specify Python version (e.g., '3.9')
+
+    # Install dependencies (you can specify requirements.txt or pyproject.toml)
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pandas numpy entsoe-py redis tensorflow scikit-learn sphinx
+        pip install .
+      
+    # Run pytest to execute tests
+    - name: Generate .config file inside the test folder
+      run: |
+          echo "[codegreen]" > .codegreencore.config
+          echo "ENTSOE_token=${{ secrets.ENTSOE_TOKEN }}" >> .codegreencore.config
+          echo "enable_energy_caching=false" >> .codegreencore.config    
+    - name: Run tests
+      run: |
+        pytest
