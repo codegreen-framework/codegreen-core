@@ -5,7 +5,7 @@ from ..utilities.message import Message,CodegreenDataError
 from ..utilities  import metadata as meta  
 from . import entsoe as et
 
-def energy(country,start_time,end_time,type="generation",interval60=True)-> pd.DataFrame:
+def energy(country,start_time,end_time,type="generation",interval60=True)-> dict:
   """
     Returns hourly time series of energy production mix for a specified country and time range.
 
@@ -46,8 +46,12 @@ def energy(country,start_time,end_time,type="generation",interval60=True)-> pd.D
     :param datetime start_time: The start date for data retrieval. A Datetime object. Note that this date will be rounded to the nearest hour.
     :param datetime end_time: The end date for data retrieval. A datetime object. This date is also rounded to the nearest hour.
     :param str type: The type of data to retrieve; either 'historical' or 'forecasted'. Defaults to 'historical'.
-    :return: A DataFrame containing the hourly energy production mix.
-    :rtype: pd.DataFrame
+    :return: A dictionary containing:
+      - `error`: A string with an error message, empty if no errors.
+      - `data_available`: A boolean indicating if data was successfully retrieved.
+      - `data`: A pandas DataFrame containing the energy data if available, empty DataFrame if not.
+      - `time_interval` : the time interval of the DataFrame
+    :rtype: dict
     """
   if not isinstance(country, str):
     raise ValueError("Invalid country")

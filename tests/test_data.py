@@ -75,7 +75,8 @@ class TestEnergyData:
       # intervals = int((case["end"].replace(minute=0, second=0, microsecond=0) - case["start"].replace(minute=0, second=0, microsecond=0)).total_seconds() // 3600)
       # print(intervals)
       if case["dtype"]=="generation":
-        data = energy(case["country"],case["start"],case["end"],case["dtype"],case["interval60"])
+        d = energy(case["country"],case["start"],case["end"],case["dtype"],case["interval60"])
+        data = d["data"]
         data_verify = pd.read_csv(case["file"])
         data_verify['start_date'] = data_verify['MTU'].str.split(' - ').str[0]
         data_verify['end_date'] = data_verify['MTU'].str.split(' - ').str[1].str.replace(' (UTC)', '', regex=False)

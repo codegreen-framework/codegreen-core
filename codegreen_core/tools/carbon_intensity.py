@@ -109,7 +109,8 @@ def compute_ci(country:str,start_time:datetime,end_time:datetime)-> pd.DataFrame
   """
   e_source = get_country_energy_source(country)
   if e_source=="ENTSOE" :
-    energy_data = energy(country,start_time,end_time)
+    data = energy(country,start_time,end_time)
+    energy_data = data["data"]
     ci_values = compute_ci_from_energy(energy_data)
     return ci_values
   else:
