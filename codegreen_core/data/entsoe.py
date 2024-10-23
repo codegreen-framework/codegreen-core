@@ -197,7 +197,7 @@ def _convert_date_to_entsoe_format(dt:datetime):
 
 # the main methods 
 
-def get_actual_production_percentage(country, start, end, interval60=False) -> pd.DataFrame:
+def get_actual_production_percentage(country, start, end, interval60=False) -> dict:
     """Returns time series data containing the percentage of energy generated from various sources for the specified country within the selected time period. 
     It also includes the percentage of energy from renewable and non renewable sources. The data is fetched from the APIs is subsequently refined. 
     To obtain data in 60-minute intervals (if not already available), set 'interval60' to True
@@ -206,65 +206,80 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> p
     :param datetime start: The start date for data retrieval. A Datetime object. Note that this date will be rounded to the nearest hour.
     :param datetime end: The end date for data retrieval. A datetime object. This date is also rounded to the nearest hour.
     :return: A DataFrame containing the hourly energy production mix and percentage of energy generated from renewable and non renewable sources.
-    :rtype: pd.DataFrame
+    :return: A dictionary containing:
+      - `error`: A string with an error message, empty if no errors.
+      - `data_available`: A boolean indicating if data was successfully retrieved.
+      - `data`: A pandas DataFrame containing the energy data if available, empty DataFrame if not.
+      - `time_interval` : the time interval of the DataFrame
+    :rtype: dict
     """
-    options = {"country": country, "start": start,"end": end, "interval60": interval60}
-    # get actual generation data per production type and convert it into 60 min interval if required
-    totalRaw = _entsoe_get_actual_generation(options)
-    total = totalRaw["data"]
-    duration = totalRaw["duration"]
-    if options["interval60"] == True and totalRaw["duration"] != 60.0:
-        table = _convert_to_60min_interval(totalRaw)
-        duration = 60
-    else:
-        table = total
-    # finding the percent renewable
-    allCols = table.columns.tolist()
-    # find out which columns are present in the data out of all the possible columns in both the categories
-    renPresent = list(set(allCols).intersection(renewableSources))
-    renPresentWS = list(set(allCols).intersection(windSolarOnly))
-    nonRenPresent = list(set(allCols).intersection(nonRenewableSources))
-    # find total renewable, total non renewable and total energy values
-    table["renewableTotal"] = table[renPresent].sum(axis=1)
-    table["renewableTotalWS"] = table[renPresentWS].sum(axis=1)
-    table["nonRenewableTotal"] = table[nonRenPresent].sum(axis=1)
-    table["total"] = table["nonRenewableTotal"] + table["renewableTotal"]
-    # calculate percent renewable
-    table["percentRenewable"] = (table["renewableTotal"] / table["total"]) * 100
-    # refine percentage values : replacing missing values with 0 and converting to integer
-    table['percentRenewable'] = table['percentRenewable'].fillna(0)
-    table["percentRenewable"] = table["percentRenewable"].round().astype(int)
-    table["percentRenewableWS"] = (table["renewableTotalWS"] / table["total"]) * 100
-    table['percentRenewableWS']= table['percentRenewableWS'].fillna(0)
-    table["percentRenewableWS"] = table["percentRenewableWS"].round().astype(int)
+    try :
+        options = {"country": country, "start": start,"end": end, "interval60": interval60}
+        # get actual generation data per production type and convert it into 60 min interval if required
+        totalRaw = _entsoe_get_actual_generation(options)
+        total = totalRaw["data"]
+        duration = totalRaw["duration"]
+        if options["interval60"] == True and totalRaw["duration"] != 60.0:
+            table = _convert_to_60min_interval(totalRaw)
+            duration = 60
+        else:
+            table = total
+        # finding the percent renewable
+        allCols = table.columns.tolist()
+        # find out which columns are present in the data out of all the possible columns in both the categories
+        renPresent = list(set(allCols).intersection(renewableSources))
+        renPresentWS = list(set(allCols).intersection(windSolarOnly))
+        nonRenPresent = list(set(allCols).intersection(nonRenewableSources))
+        # find total renewable, total non renewable and total energy values
+        table["renewableTotal"] = table[renPresent].sum(axis=1)
+        table["renewableTotalWS"] = table[renPresentWS].sum(axis=1)
+        table["nonRenewableTotal"] = table[nonRenPresent].sum(axis=1)
+        table["total"] = table["nonRenewableTotal"] + table["renewableTotal"]
+        # calculate percent renewable
+        table["percentRenewable"] = (table["renewableTotal"] / table["total"]) * 100
+        # refine percentage values : replacing missing values with 0 and converting to integer
+        table['percentRenewable'] = table['percentRenewable'].fillna(0)
+        table["percentRenewable"] = table["percentRenewable"].round().astype(int)
+        table["percentRenewableWS"] = (table["renewableTotalWS"] / table["total"]) * 100
+        table['percentRenewableWS']= table['percentRenewableWS'].fillna(0)
+        table["percentRenewableWS"] = table["percentRenewableWS"].round().astype(int)
 
-    # individual energy source percentage calculation 
-    allAddkeys = ["Wind","Solar","Nuclear","Hydroelectricity","Geothermal","Natural Gas","Petroleum","Coal","Biomass"]
-    for ky in allAddkeys:
-        keys_available =  list(set(allCols).intersection(energy_type[ky]))   
-        #print(keys_available)  
-        fieldName = ky+"_per"  
-        # print(fieldName)
-        table[fieldName] = table[keys_available].sum(axis=1)
-        table[fieldName] = (table[fieldName]/table["total"])*100
-        table[fieldName] = table[fieldName].fillna(0)
-        table[fieldName] =  table[fieldName].astype(int)
-    
-    return table
+        # individual energy source percentage calculation 
+        allAddkeys = ["Wind","Solar","Nuclear","Hydroelectricity","Geothermal","Natural Gas","Petroleum","Coal","Biomass"]
+        for ky in allAddkeys:
+            keys_available =  list(set(allCols).intersection(energy_type[ky]))   
+            #print(keys_available)  
+            fieldName = ky+"_per"  
+            # print(fieldName)
+            table[fieldName] = table[keys_available].sum(axis=1)
+            table[fieldName] = (table[fieldName]/table["total"])*100
+            table[fieldName] = table[fieldName].fillna(0)
+            table[fieldName] =  table[fieldName].astype(int)
+        
+        return {"data":table,"data_available":True,"time_interval": totalRaw["duration"]}
+    except Exception as e:
+        print(e)
+        print(traceback.format_exc())
+        return {"data": None,"data_available":False,"error":Exception,"time_interval": totalRaw["duration"]}    
 
 
-def get_forecast_percent_renewable(country:str, start:datetime, end:datetime) -> pd.DataFrame:
+def get_forecast_percent_renewable(country:str, start:datetime, end:datetime) -> dict:
     """Returns time series data  comprising the forecast of the percentage of energy generated from 
     renewable sources (specifically, wind and solar) for the specified country within the selected time period. 
     
     - The data source is the  ENTSOE APIs and involves combining data from 2 APIs : total forecast, wind and solar forecast.
     - The time interval is 60 min
-    - the data frame includes : startTimeUTC, totalRenewable,total,percent_renewable,posix_timestamp
+    - the data frame includes : `startTimeUTC`, `totalRenewable`,`total`,`percent_renewable`,`posix_timestamp`
     
     :param str country: The 2 alphabet country code.
     :param datetime start: The start date for data retrieval. A Datetime object. Note that this date will be rounded to the nearest hour.
     :param datetime end: The end date for data retrieval. A datetime object. This date is also rounded to the nearest hour.
-    :return: A DataFrame containing startTimeUTC, totalRenewable,total,percent_renewable,posix_timestamp. 
+    :return: A dictionary containing:
+      - `error`: A string with an error message, empty if no errors.
+      - `data_available`: A boolean indicating if data was successfully retrieved.
+      - `data`: A DataFrame containing `startTimeUTC`, `totalRenewable`,`total`,`percent_renewable`,`posix_timestamp`.
+      - `time_interval` : the time interval of the DataFrame
+    :rtype: dict
     """
     try:
         # print(country,start,end)

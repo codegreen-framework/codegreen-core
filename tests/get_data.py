@@ -22,7 +22,7 @@ def gen_test_case(start,end,label):
   return cases
 
 def fetch_data(case):
-  data = energy(case["country"],case["start_time"],case["end_time"])
+  data = energy(case["country"],case["start_time"],case["end_time"])["data"]
   data.to_csv("./data/"+case["file"]+".csv")
   print(case["file"])
 
@@ -127,5 +127,5 @@ def get_forecast_for_testing():
 # get_forecast_for_testing()
 
 
-data = energy("DE",datetime(2024,9,11),datetime(2024,9,12),"generation",False)
+data = energy("DE",datetime(2024,9,11),datetime(2024,9,12),"generation",False)["data"]
 print(data)
