@@ -23,14 +23,18 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.12.5'  # Specify Python version (e.g., '3.9')
+        python-version: '3.11.9'  # Specify Python version (e.g., '3.9')
 
-    # Install dependencies (you can specify requirements.txt or pyproject.toml)
+    # Install Poetry
+    - name: Install Poetry
+      run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          export PATH="$HOME/.local/bin:$PATH"
+  
+      # Install dependencies using Poetry
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install pytest pandas numpy entsoe-py redis tensorflow scikit-learn sphinx matplotlib
-        pip install .
+          poetry install
       
     # Run pytest to execute tests
     - name: Generate .config file inside the test folder
@@ -40,4 +44,4 @@ jobs:
           echo "enable_energy_caching=false" >> .codegreencore.config    
     - name: Run tests
       run: |
-        pytest
+        poetry run pytest
