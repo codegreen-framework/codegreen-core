@@ -23,7 +23,7 @@ templates_path = ['_templates']
 exclude_patterns = []
 
 
-autodoc_mock_imports = ["redis","pandas","entsoe","dateutil","tensorflow","numpy","sklearn"]
+autodoc_mock_imports = ["redis","pandas","entsoe","dateutil","tensorflow","numpy","sklearn","matplotlib"]
 
 extensions = ['sphinx.ext.autodoc','docs._extensions.country_table_extension','sphinx.ext.mathjax']
 
