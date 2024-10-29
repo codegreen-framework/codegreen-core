@@ -17,6 +17,10 @@ class TestEnergyData:
   def test_valid_endtime(self):
     with pytest.raises(ValueError):
       energy("DE",datetime(2024,1,2),"2024,1,1")
+
+  def test_valid_time(self):
+    with pytest.raises(ValueError):
+      energy("DE",datetime(2024,1,2),datetime(2020,1,1))
   
   def test_valid_type(self):
     with pytest.raises(ValueError):
@@ -99,6 +103,12 @@ class TestEnergyData:
           assert sum_of_differences == 0.0
       # else :
       #   print("")
+  def check_return_value_actual(self):
+    actual = energy("DE",datetime(2024,1,1),datetime(2024,1,2))
+    assert isinstance(actual,dict)
+  def check_return_value_actual(self):
+    forecast = energy("DE",datetime(2024,1,1),datetime(2024,1,2),"forecast")
+    assert isinstance(forecast,dict)
 
 """ todo 
 - test cases where some data is missing and has to be replaced with average

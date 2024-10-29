@@ -45,7 +45,7 @@ def energy(country,start_time,end_time,type="generation",interval60=True)-> dict
     :param str country: The 2 alphabet country code.
     :param datetime start_time: The start date for data retrieval. A Datetime object. Note that this date will be rounded to the nearest hour.
     :param datetime end_time: The end date for data retrieval. A datetime object. This date is also rounded to the nearest hour.
-    :param str type: The type of data to retrieve; either 'historical' or 'forecasted'. Defaults to 'historical'.
+    :param str type: The type of data to retrieve; either 'generation' or 'forecast'. Defaults to 'generation'.
     :return: A dictionary containing:
       - `error`: A string with an error message, empty if no errors.
       - `data_available`: A boolean indicating if data was successfully retrieved.
@@ -63,6 +63,9 @@ def energy(country,start_time,end_time,type="generation",interval60=True)-> dict
     raise ValueError(Message.INVALID_ENERGY_TYPE)
   # check start<end and both are not same 
   
+  if(start_time > end_time):
+    raise ValueError("Invalid time.End time should be greater than start time")
+
   e_source = meta.get_country_energy_source(country)
   if e_source=="ENTSOE" :
     if type == "generation":
