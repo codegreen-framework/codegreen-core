@@ -20,6 +20,7 @@ scikit-learn = "^1.5.2"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
 Sphinx = "^8.1.3"
+black = "^24.10.0"
 
 [build-system]
 requires = ["poetry-core"]

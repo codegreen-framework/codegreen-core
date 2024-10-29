@@ -18,7 +18,7 @@
 #     if(len(d)>0):
 #       forecast_data[c] = d
 #   return forecast_data
- 
+
 # def test_locations():
 #   cases = [
 #   {
