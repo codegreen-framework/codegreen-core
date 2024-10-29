@@ -25,8 +25,9 @@ class TestOptimalTimeCore:
     def test_energy_data_blank(self):
         """test if no energy data is provided, the result defaults to the request time"""
         timestamp, message, average_percent_renewable = ts.predict_optimal_time(
-            None, 1, 1, 1, self.hard_finish_time_1, self.request_time_1
+            None, 1, 1, self.hard_finish_time_1, self.request_time_1
         )
+        # print(timestamp, message, average_percent_renewable)
         assert timestamp == int(self.request_time_1.timestamp())
         assert message == Message.NO_DATA
         assert average_percent_renewable == 0
@@ -37,9 +38,8 @@ class TestOptimalTimeCore:
             self.dummy_energy_data_1,
             -1,
             1,
-            1,
             self.hard_finish_time_1,
-            self.request_time_1,
+            self.request_time_1
         )
         assert timestamp == int(self.request_time_1.timestamp())
         assert message == Message.INVALID_DATA
@@ -51,9 +51,8 @@ class TestOptimalTimeCore:
             self.dummy_energy_data_1,
             0,
             1,
-            1,
             self.hard_finish_time_1,
-            self.request_time_1,
+            self.request_time_1
         )
         assert timestamp == int(self.request_time_1.timestamp())
         assert message == Message.INVALID_DATA
@@ -65,9 +64,8 @@ class TestOptimalTimeCore:
             self.dummy_energy_data_1,
             1,
             -1,
-            1,
             self.hard_finish_time_1,
-            self.request_time_1,
+            self.request_time_1
         )
         assert timestamp == int(self.request_time_1.timestamp())
         assert message == Message.INVALID_DATA
@@ -75,11 +73,17 @@ class TestOptimalTimeCore:
 
     def test_zero_per_renew(self):
         """test if 0 % renewable , the result defaults to the request time"""
+        dummy_energy_data_2 = pd.DataFrame(
+        {
+            "startTimeUTC": [1, 2, 3],
+            "totalRenewable": [1, 2, 3],
+            "percent_renewable": [0, 0, 0],
+        }
+        )
         timestamp, message, average_percent_renewable = ts.predict_optimal_time(
-            self.dummy_energy_data_1,
+            dummy_energy_data_2,
             1,
             0,
-            -10,
             self.hard_finish_time_1,
             self.request_time_1,
         )
@@ -89,13 +93,19 @@ class TestOptimalTimeCore:
 
     def test_neg_per_renew(self):
         """test if negative -ve % renew is provided, the result defaults to the request time"""
+        dummy_energy_data_3 = pd.DataFrame(
+            {
+                "startTimeUTC": [1, 2, 3],
+                "totalRenewable": [1, 2, 3],
+                "percent_renewable": [-1, -4, -5],
+            }
+        )
         timestamp, message, average_percent_renewable = ts.predict_optimal_time(
-            self.dummy_energy_data_1,
+            dummy_energy_data_3,
             1,
             0,
-            0,
             self.hard_finish_time_1,
-            self.request_time_1,
+            self.request_time_1
         )
         assert timestamp == int(self.request_time_1.timestamp())
         assert message == Message.NEGATIVE_PERCENT_RENEWABLE
@@ -107,9 +117,8 @@ class TestOptimalTimeCore:
             self.dummy_energy_data_1,
             20,
             0,
-            10,
             self.hard_finish_time_1,
-            self.request_time_1,
+            self.request_time_1
         )
         assert timestamp == int(self.request_time_1.timestamp())
         assert message == Message.RUNTIME_LONGER_THAN_DEADLINE_ALLOWS
@@ -118,7 +127,7 @@ class TestOptimalTimeCore:
         """this is to test if  energy data provided does not contain the data for the request time"""
         data = pd.read_csv("tests/data/DE_forecast1.csv")
         timestamp, message, average_percent_renewable = ts.predict_optimal_time(
-            data, 20, 0, 10, self.hard_finish_time_2, self.request_time_2
+            data, 20, 0, self.hard_finish_time_2, self.request_time_2
         )
         assert timestamp == int(self.request_time_2.timestamp())
         assert message == Message.NO_DATA
@@ -225,7 +234,7 @@ class TestOptimalTimeCore:
     def test_data_validation_country(self):
         timestamp1 = int(datetime.now(timezone.utc).timestamp())
         timestamp, message, average_percent_renewable = ts.predict_now(
-            "UFO", 10, 0, datetime(2024, 9, 7), "percent_renewable", 30
+            "UFO", 10, 0, datetime(2024, 9, 7), "percent_renewable"
         )
         print(timestamp1, timestamp, message)
         assert timestamp - timestamp1 <= 10
@@ -269,7 +278,6 @@ def test_all_country():
             energy_data,
             row["runtime_hour"],
             row["runtime_min"],
-            row["percent_renewable"],
             end,
             start,
         )

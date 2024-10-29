@@ -24,7 +24,6 @@ def _get_energy_data(country, start, end):
     Check the country data file if models exists
     """
     energy_mode = Config.get("default_energy_mode")
-
     if Config.get("enable_energy_caching") == True:
         # check prediction is enabled : get cache or update prediction
         try:
@@ -43,6 +42,7 @@ def _get_energy_data(country, start, end):
                 forecast = energy(country, start, end, "forecast")
         elif energy_mode == "public_data":
             forecast = energy(country, start, end, "forecast")
+            # print(forecast)
         else:
             return None
         return forecast["data"]
@@ -53,8 +53,7 @@ def predict_now(
     estimated_runtime_hours: int,
     estimated_runtime_minutes: int,
     hard_finish_date: datetime,
-    criteria: str = "percent_renewable",
-    percent_renewable: int = 50,
+    criteria: str = "percent_renewable"
 ) -> tuple:
     """
     Predicts optimal computation time in the given location starting now
@@ -69,8 +68,6 @@ def predict_now(
     :type hard_finish_date: datetime
     :param criteria: Criteria based on which optimal time is calculated. Valid value "percent_renewable" or "optimal_percent_renewable"
     :type criteria: str
-    :param percent_renewable: The minimum percentage of renewable energy desired during the runtime
-    :type percent_renewable: int
     :return: Tuple[timestamp, message, average_percent_renewable]
     :rtype: tuple
     """
@@ -85,8 +82,7 @@ def predict_now(
                     energy_data,
                     estimated_runtime_hours,
                     estimated_runtime_minutes,
-                    percent_renewable,
-                    hard_finish_date,
+                    hard_finish_date
                 )
             else:
                 return _default_response(Message.ENERGY_DATA_FETCHING_ERROR)
@@ -104,7 +100,6 @@ def predict_optimal_time(
     energy_data: pd.DataFrame,
     estimated_runtime_hours: int,
     estimated_runtime_minutes: int,
-    percent_renewable: int,
     hard_finish_date: datetime,
     request_time: datetime = None,
 ) -> tuple:
@@ -114,7 +109,6 @@ def predict_optimal_time(
     :param energy_data: A DataFrame containing the energy data including startTimeUTC, totalRenewable,total,percent_renewable,posix_timestamp
     :param estimated_runtime_hours: The estimated runtime in hours
     :param estimated_runtime_minutes: The estimated runtime in minutes
-    :param percent_renewable: The minimum percentage of renewable energy desired during the runtime
     :param hard_finish_date: The latest possible finish time for the task.
     :param request_time: The time at which the prediction is requested. Defaults to None, then the current time is used. Assumed to be in local timezone
 
@@ -123,7 +117,7 @@ def predict_optimal_time(
     """
 
     granularity = 60  # assuming that the granularity of time series is 60 minutes
-
+    # print(percent_renewable)
     #  ============ data validation   =========
     if not isinstance(hard_finish_date, datetime):
         raise ValueError("Invalid hard_finish_date. it must be a datetime object")
@@ -133,6 +127,7 @@ def predict_optimal_time(
             raise ValueError("Invalid request_time. it must be a datetime object")
     if energy_data is None:
         return _default_response(Message.NO_DATA, request_time)
+    percent_renewable =  int(energy_data["percent_renewable"].max())  #assuming we want the max possible percent renewable 
     if percent_renewable <= 0:
         return _default_response(Message.NEGATIVE_PERCENT_RENEWABLE, request_time)
     if estimated_runtime_hours <= 0:

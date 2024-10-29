@@ -13,7 +13,12 @@ class Config:
     config_data = None
     section_name = "codegreen"
     boolean_keys = {"enable_energy_caching", "enable_time_prediction_logging"}
-    defaults = {"default_energy_mode": "public_data", "enable_energy_caching": False}
+    defaults = {
+        "default_energy_mode": "public_data",
+        "enable_energy_caching": False,
+        "enable_time_prediction_logging": False,
+        "energy_redis_path": None,
+    }
 
     @classmethod
     def load_config(self, file_path=None):
@@ -34,6 +39,12 @@ class Config:
         self.config_data = configparser.ConfigParser()
         self.config_data.read(file_path)
 
+        if self.section_name not in self.config_data:
+            self.config_data[self.section_name] = {}
+        for key, default_value in self.defaults.items():
+            if not self.config_data.has_option(self.section_name, key):
+                self.config_data.set(self.section_name, key, str(default_value))
+
         if self.get("enable_energy_caching") == True:
             if self.get("energy_redis_path") is None:
                 raise ConfigError(
@@ -42,6 +53,7 @@ class Config:
             else:
                 r = redis.from_url(self.get("energy_redis_path"))
                 r.ping()
+        # print(self.config_data["default_energy_mode"])
 
     @classmethod
     def get(self, key):
@@ -60,4 +72,4 @@ class Config:
                     value = value.lower() == "true"
             return value
         except (configparser.NoSectionError, configparser.NoOptionError):
-            return None
+            return self.defaults.get(key)  # Return default if key is missing
