@@ -107,6 +107,15 @@ def compute_ci(country:str,start_time:datetime,end_time:datetime)-> pd.DataFrame
   The default CI values for all countries are stored in utilities/ci_default_values.csv. 
 
   """
+  if not isinstance(country, str):
+    raise ValueError("Invalid country")
+  
+  if not isinstance(start_time, datetime):
+    raise ValueError("Invalid start_time")
+  
+  if not isinstance(end_time, datetime):
+    raise ValueError("Invalid end_time")
+  
   e_source = get_country_energy_source(country)
   if e_source=="ENTSOE" :
     data = energy(country,start_time,end_time)
@@ -121,20 +130,52 @@ def compute_ci(country:str,start_time:datetime,end_time:datetime)-> pd.DataFrame
 
 def compute_ci_from_energy(energy_data:pd.DataFrame,default_method="ci_ipcc_lifecycle_mean",base_values:dict=None)-> pd.DataFrame:
     """ 
-    Given the energy time series, computes the Carbon intensity for each row. 
-    You can choose the base value from several sources available or use your own base values
-    
-    :param energy_data: The data frame must include the following columns : `Coal_per, Petroleum_per, Biomass_per, Natural Gas_per, Geothermal_per, Hydroelectricity_per, Nuclear_per, Solar_per, Wind_per`
-    :param default_method: This option is to choose the base value of each energy source. By default, IPCC_lifecycle_mean values are used. List of all options:     
+    Given the energy time series, computes the carbon intensity for each row. 
+    You can choose the base value from several sources available or use your own base values.
+
+    :param energy_data: A pandas DataFrame that must include the following columns, representing 
+                        the percentage of energy generated from each source:
+        
+        - `Coal_per` (float): Percentage of energy generated from coal.
+        - `Petroleum_per` (float): Percentage of energy generated from petroleum.
+        - `Biomass_per` (float): Percentage of energy generated from biomass.
+        - `Natural Gas_per` (float): Percentage of energy generated from natural gas.
+        - `Geothermal_per` (float): Percentage of energy generated from geothermal sources.
+        - `Hydroelectricity_per` (float): Percentage of energy generated from hydroelectric sources.
+        - `Nuclear_per` (float): Percentage of energy generated from nuclear sources.
+        - `Solar_per` (float): Percentage of energy generated from solar sources.
+        - `Wind_per` (float): Percentage of energy generated from wind sources.
+
+    :param default_method: This parameter allows you to choose the base values for each energy source. 
+                          By default, the IPCC lifecycle mean values are used. Available options include:
         
         - `codecarbon` (Ref [6])
         - `ipcc_lifecycle_min` (Ref [5])
         - `ipcc_lifecycle_mean` (default)
         - `ipcc_lifecycle_max`
         - `eu_comm` (Ref [4])
-    :param base_values: Custom base Carbon Intensity values of energy sources. Must include following keys :  `Coal, Petroleum, Biomass, Natural Gas, Geothermal, Hydroelectricity, Nuclear, Solar, Wind`
-
+    
+    :param base_values(optional): A dictionary of custom base carbon intensity values for energy sources. 
+                        Must include the following keys:
+        
+        - `Coal` (float): Base carbon intensity value for coal.
+        - `Petroleum` (float): Base carbon intensity value for petroleum.
+        - `Biomass` (float): Base carbon intensity value for biomass.
+        - `Natural Gas` (float): Base carbon intensity value for natural gas.
+        - `Geothermal` (float): Base carbon intensity value for geothermal energy.
+        - `Hydroelectricity` (float): Base carbon intensity value for hydroelectricity.
+        - `Nuclear` (float): Base carbon intensity value for nuclear energy.
+        - `Solar` (float): Base carbon intensity value for solar energy.
+        - `Wind` (float): Base carbon intensity value for wind energy.
     """
+
+    if not isinstance(energy_data, pd.DataFrame):
+        raise ValueError("Invalid energy data.")
+    
+    if not isinstance(default_method, str):
+        raise ValueError("Invalid default_method")
+    
+
     if base_values:
         energy_data['ci_default'] = energy_data.apply(lambda row: _calculate_weighted_sum(row.to_dict(),base_values), axis=1)
         return energy_data
