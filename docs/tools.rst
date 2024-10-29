@@ -67,7 +67,7 @@ Carbon emission of a job depends on 2 factors : Energy consumed by the hardware 
    - :math:`PUE` :  efficiency coefficient of the data center
    
 - Emissions related to the production of the energy : represented by the Carbon Intensity of the energy mix during that period. Already implemented above
-
+- The result is Carbon emission in CO2e
 
 .. automodule:: codegreen_core.tools.carbon_emission
    :members:

@@ -130,12 +130,13 @@ def plot_multiple_percentage_clean(dfs, labels,save_fig_path=None):
 
 def show_clean_energy(country,start,end,save_fig_path=None):
     """note that these plots are based on actual energy production and not the forecasts"""
-    actual1 = energy(country,start,end)
+    d = energy(country,start,end)
+    actual1 = d["data"]
     plot_percentage_clean(actual1,country,save_fig_path)
 
 
 def show_clean_energy_multiple(countries,start,end,save_fig_path=None):
     data = []
     for c in countries :
-        data.append(energy(c,start,end))
+        data.append(energy(c,start,end)["data"])
     plot_multiple_percentage_clean(data,countries,save_fig_path)
