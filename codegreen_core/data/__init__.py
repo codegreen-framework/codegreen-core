@@ -1,2 +1,3 @@
 from .main import *
-__all__ = ['energy']
+
+__all__ = ["energy"]
