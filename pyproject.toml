@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "codegreen-core"
+name = "codegreen_core"
 version = "0.5.0"
 description = "This package helps you become aware of the carbon footprint of your computation"
 authors = ["Anne Hartebrodt <anne.hartebrodt@fau.de>","Shubh Vardhan Jain <shubh.v.jain@fau.de>"]
@@ -25,9 +25,3 @@ black = "^24.10.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-# Specify additional package data (similar to include_package_data)
-#[tool.poetry.package.include]
-#"codegreen_core/utilities/country_list.json" = { format = "file" }
-#"codegreen_core/utilities/ci_default_values.csv" = { format = "file" }
-#"codegreen_core/utilities/model_details.json" = { format = "file" }
