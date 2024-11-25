@@ -169,14 +169,9 @@ def compute_ce_from_energy(server, ci_data: pd.DataFrame):
     """
     date_format = "%Y%m%d%H%M"  # Year, Month, Day, Hour, Minute
 
-    server_defaults = {
-        "power_draw_core": 15.8,
-        "usage_factor_core": 1,
-        "power_draw_mem": 0.3725,
-        "power_usage_efficiency": 1.6,
-    }
-    server = server_defaults | server  # set defaults if not provided
 
+    server =  _add_server_defaults(server)  # set defaults if not provided
+    # print(server)
     # to make sure startTimeUTC is in date format
     if not pd.api.types.is_datetime64_any_dtype(ci_data["startTimeUTC"]):
         ci_data["startTimeUTC"] = pd.to_datetime(ci_data["startTimeUTC"])
@@ -208,7 +203,7 @@ def compute_ce_from_energy(server, ci_data: pd.DataFrame):
 
 def _compute_ce_bulk(server, jobs):
     for job in jobs:
-        job.end_time = job["start_time"] + timedelta(minutes=job["runtime_minutes"])
+        job['end_time'] = job["start_time"] + timedelta(minutes=job["runtime_minutes"])
 
     min_start_date = min(job["start_time"] for job in jobs)
     max_end_date = max(job["end_time"] for job in jobs)
@@ -222,19 +217,23 @@ def _compute_ce_bulk(server, jobs):
             & (energy_data["startTimeUTC"] <= job["end_time"])
         ]
         job["emissions"], temp = compute_ce_from_energy(
-            filtered_energy,
-            server["number_core"],
-            server["memory_gb"],
-            server["power_draw_core"],
-            server["usage_factor_core"],
-            server["power_draw_mem"],
-            server["power_usage_efficiency"],
+            server,
+            filtered_energy
         )
     return energy_data, jobs, min_start_date, max_end_date
 
+def _add_server_defaults(server):
+    server_defaults = {
+        "power_draw_core": 15.8,
+        "usage_factor_core": 1,
+        "power_draw_mem": 0.3725,
+        "power_usage_efficiency": 1.6,
+    }
+    server = server_defaults | server  # set defaults if not provided
+    return server    
 
 def plot_ce_jobs(server, jobs):
-    energy_data, jobs, min_start_date, max_end_date = _compute_ce_bulk(server, jobs)
+    energy_data, jobs, min_start_date, max_end_date = _compute_ce_bulk(_add_server_defaults(server), jobs)
     Color = {
         "red": "#D6A99A",
         "green": "#99D19C",
@@ -294,4 +293,5 @@ def plot_ce_jobs(server, jobs):
     # Add legend and show the plot
     fig.tight_layout()
     # plt.legend(loc='lower right')
-    plt.show()
+    plt.show(block=True)
+    # plt.pyplot.show()
