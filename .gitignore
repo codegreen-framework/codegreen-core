@@ -174,3 +174,6 @@ codegreen_core/models/files
 Dockerfile
 .vscode
 poetry.lock
+
+codegreen_core/tools/test.py
+codegreen_core/data/test.py
