@@ -44,7 +44,7 @@
       "carbon_intensity_method": "ipcc"
     },
     "DK": {
-      "country": "Germany",
+      "country": "Denmark",
       "energy_source": "ENTSOE",
       "carbon_intensity_method": "ipcc"
     },
