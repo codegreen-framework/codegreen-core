@@ -117,17 +117,23 @@ def _refine_data(options, data1):
     data1.sort_index(inplace=True)
     return {"data": data1, "refine_logs": refine_logs}
 
+def _convert_local_to_utc(dte):
+    # datetime obj is converted from local time zone to utc 
+    local_timezone = datetime.now().astimezone().tzinfo
+    return pd.Timestamp(dte,tz=local_timezone).tz_convert('UTC')
 
 def _entsoe_get_actual_generation(options={"country": "", "start": "", "end": ""}):
     """Fetches the aggregated actual generation per production type data (16.1.B&C) for the given country within the given start and end date
     params: options = {country (2 letter country code),start,end} . Both the dates are in the YYYYMMDDhhmm format and the local time zone
     returns : {"data":pd.DataFrame, "duration":duration (in min) of the time series data, "refine_logs":"notes on refinements made" }
     """
+    utc_start = _convert_local_to_utc(options["start"]) 
+    utc_end =   _convert_local_to_utc(options["end"]) 
     client1 = entsoePandas(api_key=_get_API_token())
     data1 = client1.query_generation(
         options["country"],
-        start=pd.Timestamp(options["start"], tz="UTC"),
-        end=pd.Timestamp(options["end"], tz="UTC"),
+        start = utc_start ,
+        end = utc_end ,
         psr_type=None,
     )
     # drop columns with actual consumption values (we want actual aggregated generation values)
@@ -159,8 +165,8 @@ def _entsoe_get_total_forecast(options={"country": "", "start": "", "end": ""}):
     client = entsoePandas(api_key=_get_API_token())
     data = client.query_generation_forecast(
         options["country"],
-        start=pd.Timestamp(options["start"], tz="UTC"),
-        end=pd.Timestamp(options["end"], tz="UTC"),
+        start=_convert_local_to_utc(options["start"]) ,
+        end=_convert_local_to_utc(options["end"]) 
     )
     # if the data is a series instead of a dataframe, it will be converted to a dataframe
     if isinstance(data, pd.Series):
@@ -188,8 +194,8 @@ def _entsoe_get_wind_solar_forecast(options={"country": "", "start": "", "end": 
     client = entsoePandas(api_key=_get_API_token())
     data = client.query_wind_and_solar_forecast(
         options["country"],
-        start=pd.Timestamp(options["start"], tz="UTC"),
-        end=pd.Timestamp(options["end"], tz="UTC"),
+        start=_convert_local_to_utc(options["start"]) ,
+        end=_convert_local_to_utc(options["end"]) 
     )
     durationMin = (data.index[1] - data.index[0]).total_seconds() / 60
     # refining the data
@@ -246,6 +252,7 @@ def _convert_to_60min_interval(rawData):
 
 
 def _convert_date_to_entsoe_format(dt: datetime):
+    """ rounds the date to nearest hour """
     return dt.replace(minute=0, second=0, microsecond=0).strftime("%Y%m%d%H%M")
 
 
@@ -260,6 +267,7 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> d
     :param str country: The 2 alphabet country code.
     :param datetime start: The start date for data retrieval. A Datetime object. Note that this date will be rounded to the nearest hour.
     :param datetime end: The end date for data retrieval. A datetime object. This date is also rounded to the nearest hour.
+    :param boolean interval60: To convert the data into 60 min time interval. False by default 
     :return: A DataFrame containing the hourly energy production mix and percentage of energy generated from renewable and non renewable sources.
     :return: A dictionary containing:
       - `error`: A string with an error message, empty if no errors.
@@ -269,6 +277,25 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> d
     :rtype: dict
     """
     try:
+        if not isinstance(country, str):
+            raise ValueError("Invalid country")
+        if not isinstance(start, datetime):
+            raise ValueError("Invalid start date")
+        if not isinstance(end, datetime):
+            raise ValueError("Invalid end date")
+
+        if start > datetime.now():
+            raise ValueError("Invalid start date. Generation data is only available for the past and not the future. Use the forecast API instead")
+
+        if start > end :
+            raise ValueError("Invalid date range. End date must be greater than the start date")
+        
+        # if end date is in the future and the start date is in the past , only data till the available moment will be returned.
+        if end > datetime.now():
+            raise ValueError("Invalid end date. Generation data is only available for the past and not the future. Use the forecast API instead")
+            # this is not allowed because the entsoe-py returns error if it's greater than the present
+            #warnings.warn("End date is in the future. Will fetch data only till the present")
+                
         options = {
             "country": country,
             "start": start,
@@ -332,12 +359,12 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> d
             "time_interval": duration,
         }
     except Exception as e:
-        print(e)
+        # print(e)
         print(traceback.format_exc())
         return {
             "data": None,
             "data_available": False,
-            "error": Exception,
+            "error": e,
             "time_interval": 0,
         }
 
@@ -364,6 +391,13 @@ def get_forecast_percent_renewable(
     """
     try:
         # print(country,start,end)
+        if not isinstance(country, str):
+            raise ValueError("Invalid country")
+        if not isinstance(start, datetime):
+            raise ValueError("Invalid start date")
+        if not isinstance(end, datetime):
+            raise ValueError("Invalid end date")
+        
         start = _convert_date_to_entsoe_format(start)
         end = _convert_date_to_entsoe_format(end)
         options = {"country": country, "start": start, "end": end}
