@@ -6,6 +6,14 @@ from ..utilities import metadata as meta
 from . import entsoe as et
 
 
+def _format_energy_data(df):
+    start_time_column = df.pop("startTimeUTC")
+    df.insert(0, "startTime", start_time_column)
+    local_timezone = datetime.now().astimezone().tzinfo
+    df["startTime"] = pd.to_datetime(df["startTime"], format="%Y%m%d%H%M").dt.tz_localize("UTC").dt.tz_convert(local_timezone)
+    df.insert(1, "startTimeUTC", start_time_column)
+    return df
+
 def energy(country, start_time, end_time, type="generation", interval60=True) -> dict:
     """
     Returns hourly time series of energy production mix for a specified country and time range.
@@ -19,8 +27,9 @@ def energy(country, start_time, end_time, type="generation", interval60=True) ->
      ========================== ========== ================================================================
       Column                     type       Description
      ========================== ========== ================================================================
-      startTimeUTC               datetime   Start date in UTC (60 min interval)
-      Biomass                    float64
+      startTimeUTC               object    Start date in UTC (format YYYYMMDDhhmm)
+      startTime                  datetime  Start time in local timezone
+      Biomass                    float64 
       Fossil Hard coal           float64
       Geothermal                 float64
       ....more energy sources    float64
@@ -47,11 +56,13 @@ def energy(country, start_time, end_time, type="generation", interval60=True) ->
     :param datetime start_time: The start date for data retrieval. A Datetime object. Note that this date will be rounded to the nearest hour.
     :param datetime end_time: The end date for data retrieval. A datetime object. This date is also rounded to the nearest hour.
     :param str type: The type of data to retrieve; either 'generation' or 'forecast'. Defaults to 'generation'.
+    :param boolean interval60: To fix the time interval of data to 60 minutes. True by default. Only applicable for generation data
+
     :return: A dictionary containing:
       - `error`: A string with an error message, empty if no errors.
       - `data_available`: A boolean indicating if data was successfully retrieved.
       - `data`: A pandas DataFrame containing the energy data if available, empty DataFrame if not.
-      - `time_interval` : the time interval of the DataFrame
+      - `time_interval` : the time interval of the DataFrame 
     :rtype: dict
     """
     if not isinstance(country, str):
@@ -70,11 +81,15 @@ def energy(country, start_time, end_time, type="generation", interval60=True) ->
     e_source = meta.get_country_energy_source(country)
     if e_source == "ENTSOE":
         if type == "generation":
-            return et.get_actual_production_percentage(
+            energy_data = et.get_actual_production_percentage(
                 country, start_time, end_time, interval60
             )
+            energy_data["data"] = _format_energy_data(energy_data["data"])
+            return energy_data
         elif type == "forecast":
-            return et.get_forecast_percent_renewable(country, start_time, end_time)
+            energy_data = et.get_forecast_percent_renewable(country, start_time, end_time)
+            energy_data["data"] = _format_energy_data(energy_data["data"])
+            return energy_data
     else:
         raise CodegreenDataError(Message.NO_ENERGY_SOURCE)
     return None
