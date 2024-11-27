@@ -329,7 +329,7 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> d
         return {
             "data": table,
             "data_available": True,
-            "time_interval": totalRaw["duration"],
+            "time_interval": duration,
         }
     except Exception as e:
         print(e)
@@ -338,7 +338,7 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> d
             "data": None,
             "data_available": False,
             "error": Exception,
-            "time_interval": totalRaw["duration"],
+            "time_interval": 0,
         }
 
 
