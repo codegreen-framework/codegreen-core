@@ -34,7 +34,7 @@ class Config:
                 break
 
         if file_path is None:
-            raise ConfigError("404 config")
+            raise ConfigError("Could not find the '.codegreencore.config' file. Please ensure that this file is created in the root folder of your project.")
 
         self.config_data = configparser.ConfigParser()
         self.config_data.read(file_path)
