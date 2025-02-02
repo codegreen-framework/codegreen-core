@@ -11,9 +11,10 @@ Welcome to codegreen_core's documentation!
    :caption: Contents:
 
    introduction
+   methodology
    getting_started
-   data
-   tools
+   api
+   status
    references
    version_history
 
