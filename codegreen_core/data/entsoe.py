@@ -231,6 +231,10 @@ def _convert_to_60min_interval(rawData):
         # determining how many rows need to be combined to get data in 60 min format.
         groupingFactor = int(60 / duration)
         oldData = rawData["data"]
+        # check if there is enough data to convert to 60 min
+        if (len(oldData) < groupingFactor):
+            raise ValueError("Data cannot be converted into 60 min interval since there is inadequate number of rows in the data")
+        
         oldData["startTimeUTC"] = pd.to_datetime(oldData["startTimeUTC"])
         start_time = oldData["startTimeUTC"].min()
         end_time = oldData["startTimeUTC"].max()
@@ -254,6 +258,15 @@ def _convert_to_60min_interval(rawData):
 def _convert_date_to_entsoe_format(dt: datetime):
     """ rounds the date to nearest hour """
     return dt.replace(minute=0, second=0, microsecond=0).strftime("%Y%m%d%H%M")
+
+
+def _format_energy_data(df):
+    start_time_column = df.pop("startTimeUTC")
+    df.insert(0, "startTime", start_time_column)
+    local_timezone = datetime.now().astimezone().tzinfo
+    df["startTime"] = pd.to_datetime(df["startTime"], format="%Y%m%d%H%M").dt.tz_localize("UTC").dt.tz_convert(local_timezone)
+    df.insert(1, "startTimeUTC", start_time_column)
+    return df
 
 
 # the main methods
@@ -295,13 +308,14 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> d
             raise ValueError("Invalid end date. Generation data is only available for the past and not the future. Use the forecast API instead")
             # this is not allowed because the entsoe-py returns error if it's greater than the present
             #warnings.warn("End date is in the future. Will fetch data only till the present")
-                
+
         options = {
             "country": country,
-            "start": start,
-            "end": end,
+            "start": start.replace(minute=0,second=0),
+            "end": end.replace(second=0,minute=0),
             "interval60": interval60,
         }
+        # print(options)
         # get actual generation data per production type and convert it into 60 min interval if required
         totalRaw = _entsoe_get_actual_generation(options)
         total = totalRaw["data"]
@@ -354,7 +368,7 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> d
             table[fieldName] = table[fieldName].astype(int)
 
         return {
-            "data": table,
+            "data": _format_energy_data(table),
             "data_available": True,
             "time_interval": duration,
         }
@@ -424,7 +438,7 @@ def get_forecast_percent_renewable(
             windsolar["startTimeUTC"], format="%Y%m%d%H%M"
         )
         windsolar["posix_timestamp"] = windsolar["startTimeUTC"].astype(int) // 10**9
-        return {"data": windsolar, "data_available": True, "time_interval": 60}
+        return {"data": _format_energy_data(windsolar), "data_available": True, "time_interval": 60}
     except Exception as e:
         print(e)
         print(traceback.format_exc())

@@ -47,8 +47,37 @@ class Config:
             "default":" ",
             "boolean":False,
             "use":"Path of the folder where logs will be stored"
+        },
+        {
+            "name":"offline_data_dir_path",
+            "default":"",
+            "boolean":False,
+            "use":"Path of the folder where bulk energy data will be stored"
+        },
+         {
+            "name":"enable_offline_energy_generation",
+            "default":"False",
+            "boolean":True,
+            "use":"To enable storing energy production data for available countries locally and in cache for quick access"
+        }, 
+         {
+            "name":"offline_data_start_date",
+            "default":"",
+            "boolean":False,
+            "use":"The start date for offline energy generation download,YYYY-mm-dd format"
+        },
+         {
+            "name":"enable_logging",
+            "default":"False",
+            "boolean":True,
+            "use":"Indicates if logging is enabled for the whole package"
+        },
+         {
+            "name":"log_folder_path",
+            "default":"",
+            "boolean":False,
+            "use":"The folder where log files will be stored. Log files name are of the format: 'year-month' "
         }
-    
     ]
 
     @classmethod
@@ -79,6 +108,7 @@ class Config:
                 value = self.config_data.get(self.section_name, ky["name"])
                 # print(value)
             except configparser.NoOptionError:
+                # print(ky)
                 self.config_data.set(self.section_name, ky["name"],ky["default"])
             
         if self.get("enable_energy_caching") == True:
@@ -90,6 +120,15 @@ class Config:
                 r = redis.from_url(self.get("energy_redis_path"))
                 r.ping()
                 # print("Connection to redis works")
+
+        if self.get("enable_logging") == True:
+            if self.get("log_folder_path") is None:
+                raise ConfigError(
+                    "Invalid configuration. If 'enable_logging' is set, 'log_folder_path' is also required  "
+                )
+            else:
+                base_dir = self.get("log_folder_path")
+                os.makedirs(base_dir, exist_ok=True)
 
     @classmethod
     def get(self, key):
