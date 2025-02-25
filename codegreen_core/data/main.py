@@ -3,18 +3,12 @@ from datetime import datetime
 
 from ..utilities.message import Message, CodegreenDataError
 from ..utilities import metadata as meta
+from ..utilities.config import Config
+
 from . import entsoe as et
+from . import offline as off
 
-
-def _format_energy_data(df):
-    start_time_column = df.pop("startTimeUTC")
-    df.insert(0, "startTime", start_time_column)
-    local_timezone = datetime.now().astimezone().tzinfo
-    df["startTime"] = pd.to_datetime(df["startTime"], format="%Y%m%d%H%M").dt.tz_localize("UTC").dt.tz_convert(local_timezone)
-    df.insert(1, "startTimeUTC", start_time_column)
-    return df
-
-def energy(country, start_time, end_time, type="generation", interval60=True) -> dict:
+def energy(country, start_time, end_time, type="generation") -> dict:
     """
     Returns hourly time series of energy production mix for a specified country and time range.
 
@@ -81,14 +75,25 @@ def energy(country, start_time, end_time, type="generation", interval60=True) ->
     e_source = meta.get_country_energy_source(country)
     if e_source == "ENTSOE":
         if type == "generation":
-            energy_data = et.get_actual_production_percentage(
-                country, start_time, end_time, interval60
-            )
-            energy_data["data"] = _format_energy_data(energy_data["data"])
-            return energy_data
+            """
+            let local_found= false
+            see if caching is enabled, if yes, first check in the cache
+            if not, 
+                check if offline data is enabled
+                if yes, check is data is available locally 
+                if no, go online 
+            """
+            offline_data = off.get_offline_data(country,start_time,end_time)
+            if offline_data["available"] is True and offline_data["partial"] is False:
+                # todo fix this if partial get remaining data and merge instead of fetching the complete data
+                return {"data":offline_data["data"],"data_available":True,"error":"None","time_interval":60,"message":"Data from offline source"}
+            else:
+                energy_data = et.get_actual_production_percentage(country, start_time, end_time, interval60=True)
+                energy_data["data"] = energy_data["data"]
+                return energy_data            
         elif type == "forecast":
             energy_data = et.get_forecast_percent_renewable(country, start_time, end_time)
-            energy_data["data"] = _format_energy_data(energy_data["data"])
+            energy_data["data"] = energy_data["data"]
             return energy_data
     else:
         raise CodegreenDataError(Message.NO_ENERGY_SOURCE)

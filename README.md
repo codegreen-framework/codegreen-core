@@ -2,6 +2,16 @@
 
 This repository contains the main functionality of the codegreen project. The complete documentation including installation and usage are available on the [documentation website](https://codegreen-framework.github.io/codegreen-core/). 
 
+# Development 
+
+## Installation
+- `git clone`
+- install poetry
+- install in editable mode : `poetry install`
+
+## Github workflows
+Changes in the repo also triggers github actions 
+
 ## Development workflow 
 - the `release` branch contains the latest stable version of the released python package 
 - the `main` branch contains stable, tested code ready to be released. 
