@@ -3,10 +3,12 @@ from datetime import datetime
 
 from ..utilities.message import Message, CodegreenDataError
 from ..utilities import metadata as meta
+from ..utilities.config import Config
+
 from . import entsoe as et
+from . import offline as off
 
-
-def energy(country, start_time, end_time, type="generation", interval60=True) -> dict:
+def energy(country, start_time, end_time, type="generation") -> dict:
     """
     Returns hourly time series of energy production mix for a specified country and time range.
 
@@ -19,8 +21,9 @@ def energy(country, start_time, end_time, type="generation", interval60=True) ->
      ========================== ========== ================================================================
       Column                     type       Description
      ========================== ========== ================================================================
-      startTimeUTC               datetime   Start date in UTC (60 min interval)
-      Biomass                    float64
+      startTimeUTC               object    Start date in UTC (format YYYYMMDDhhmm)
+      startTime                  datetime  Start time in local timezone
+      Biomass                    float64 
       Fossil Hard coal           float64
       Geothermal                 float64
       ....more energy sources    float64
@@ -47,11 +50,13 @@ def energy(country, start_time, end_time, type="generation", interval60=True) ->
     :param datetime start_time: The start date for data retrieval. A Datetime object. Note that this date will be rounded to the nearest hour.
     :param datetime end_time: The end date for data retrieval. A datetime object. This date is also rounded to the nearest hour.
     :param str type: The type of data to retrieve; either 'generation' or 'forecast'. Defaults to 'generation'.
+    :param boolean interval60: To fix the time interval of data to 60 minutes. True by default. Only applicable for generation data
+
     :return: A dictionary containing:
       - `error`: A string with an error message, empty if no errors.
       - `data_available`: A boolean indicating if data was successfully retrieved.
       - `data`: A pandas DataFrame containing the energy data if available, empty DataFrame if not.
-      - `time_interval` : the time interval of the DataFrame
+      - `time_interval` : the time interval of the DataFrame 
     :rtype: dict
     """
     if not isinstance(country, str):
@@ -70,11 +75,27 @@ def energy(country, start_time, end_time, type="generation", interval60=True) ->
     e_source = meta.get_country_energy_source(country)
     if e_source == "ENTSOE":
         if type == "generation":
-            return et.get_actual_production_percentage(
-                country, start_time, end_time, interval60
-            )
+            """
+            let local_found= false
+            see if caching is enabled, if yes, first check in the cache
+            if not, 
+                check if offline data is enabled
+                if yes, check is data is available locally 
+                if no, go online 
+            """
+            offline_data = off.get_offline_data(country,start_time,end_time)
+            if offline_data["available"] is True and offline_data["partial"] is False and offline_data["data"] is not None:
+                # todo fix this if partial get remaining data and merge instead of fetching the complete data
+                return {"data":offline_data["data"],"data_available":True,"error":"None","time_interval":60,"source":offline_data["source"]}
+            else:
+                energy_data = et.get_actual_production_percentage(country, start_time, end_time, interval60=True)
+                energy_data["data"] = energy_data["data"]
+                energy_data["source"] = "public_data"
+                return energy_data            
         elif type == "forecast":
-            return et.get_forecast_percent_renewable(country, start_time, end_time)
+            energy_data = et.get_forecast_percent_renewable(country, start_time, end_time)
+            energy_data["data"] = energy_data["data"]
+            return energy_data
     else:
         raise CodegreenDataError(Message.NO_ENERGY_SOURCE)
     return None

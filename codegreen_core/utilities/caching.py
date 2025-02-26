@@ -51,6 +51,7 @@ def get_cache_or_update(country, start, deadline, energy_mode="public_data"):
                 return data_object
     else:
         print("caches has no country, calling _pull_data(country, start, deadline)")
+        # print(energy_mode)
         return _pull_data(country, start, deadline, energy_mode)
 
 
@@ -72,14 +73,17 @@ def _pull_data(country, start, end, energy_mode="public_data"):
         else:
             return None
         last_update = datetime.now().timestamp()
-        if forecast_data["data_available"]:
-            last_prediction = forecast_data["data"].iloc[-1]["posix_timestamp"]
-        else:
-            last_prediction = pd.Timestamp(datetime.now(), tz="UTC")
+        #if forecast_data["data_available"]:
+        #    last_prediction = forecast_data["data"].iloc[-1]["startTimeUTC"]
+        #else:
+        #    last_prediction = pd.Timestamp(datetime.now(), tz="UTC")
 
         df = forecast_data["data"]
+        del df["startTime"]  
         df["startTimeUTC"] = pd.to_datetime(df["startTimeUTC"])
         df["startTimeUTC"] = df["startTimeUTC"].dt.strftime("%Y%m%d%H%M").astype("str")
+        last_col = forecast_data["data"].iloc[-1]["startTimeUTC"]
+        last_prediction = int(datetime.strptime(last_col, "%Y%m%d%H%M").timestamp())
         cached_object = {
             "data": df.to_dict(),
             "time_interval": forecast_data["time_interval"],
@@ -87,6 +91,7 @@ def _pull_data(country, start, end, energy_mode="public_data"):
             "last_updated": int(last_update),
             "last_prediction": int(last_prediction),
         }
+        #print(cached_object)
         cache.set(_get_country_key(country, energy_mode), json.dumps(cached_object))
         return cached_object
 

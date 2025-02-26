@@ -1,97 +1,159 @@
 .. getting_started:
 
 
-Getting Started
-===============
+How to use codegreen
+=====================
 
-Welcome to the guide for getting started with `codegreen_core`. This document provides installation instructions and the initial steps required to get the package up and running. It also outlines the package structure, which will help you choose the appropriate tools based on your needs.
+Welcome to the guide for getting started with the `codegreen` framework. 
+There are four main ways to setup and use Codegreen based on your requirements. 
+This document describes in detail the steps involved in each method. 
 
-Installation
--------------
+The four ways to use codegreen:
 
-Using pip : 
+1. Using `codegreen.world` 
+2. Setting up and using the `codegreen_core` package
+3. Setting up your own web server 
+4. Deploying the web service using the docker container
+
+
+Using codegreen.world
+----------------------
+
+The simplest and fastest way to use Codegreen is through our web service.
+This is ideal for beginners and new users looking for an easy way to reduce the carbon emissions of their computations.
+
+1. Visit `www.codegreen.world <https://www.codegreen.world>`_
+2. Create and account and log in
+3. Generate an API token for your location and server details
+4. Use the "Predict Optimal Time" form to get a time prediction for starting a computation in your selected location and server.
+
+
+Additionally, we  provide `codegreen_client`, a Python package that can automatically start your Python scripts at the optimal time. Please refer to for installation and setup guide for more details. 
+
+
+The web service also includes a dashboard where you can track how much carbon emission you have saved in each registered location.
+
+
+Installing the `codegreen_core` package
+-----------------------------------------
+
+The `codegreen_core` Python package contains all the core functionalities of the Codegreen framework and can be used as a standalone tool.  
+This is ideal for researchers and  developers who need to gather energy data for a country and perform calculations such as carbon intensity analysis.
+
+**Step 1: Installation**
+
+You can install the package using pip : 
 
 .. code-block:: python
 
   pip install codegreen_core
 
-You can also use clone the git repository and install the package :
+Alternatively, you can clone the Git repository and install the package manually:  
 
 .. code-block:: bash
 
   git clone https://github.com/bionetslab/codegreen-core.git
   pip install -e  . 
 
+**Step 2 : Setting up the configuration file**
 
-Setup 
--------
+The package requires a configuration file where all settings are defined.  Create a new file named `.codegreencore.config`` in your root directory. This file will contain all the configurations required to run the package successfully. 
 
-After successfully installing the package, the next step is to create a configuration file:
+The next section describes how to set up the package based on your requirements.  
 
-- Create a new file named `.codegreencore.config`` in your root directory.
-- This file will contain all the configurations required to run the package successfully.
-- Below is a template for the configuration file:"
+
+Configuring the `codegreen_core` package
+-----------------------------------------
+
+The codegreen_core package offers a wide range of functionalities and can be used in many applications.
+
+Below is the template for the basic configuration 
 
 .. code-block:: bash
 
   [codegreen]
     ENTSOE_token = <token>
-    enable_energy_caching = false
-    energy_redis_path = <redis_path>
+
+This configuration allows you to fetch data online and use it.  
+It is recommended to start with the basic setup and explore the available APIs before making advanced customizations.  
+
+The API of the package is available :doc:`here <api>`
+
+The table below summarizes all available configs : 
+
+.. list-table:: Available Configuration Options
+   :header-rows: 1
+   :widths: 20 50 10 20
+
+   * - Name
+     - Description
+     - Default 
+     - Possible Values
+   * - `ENTSOE_token`
+     - The token required to fetch data from the ENTSO-E portal. Please follow the steps at https://transparency.entsoe.eu to create a free account and obtain an API token.
+     - None
+     - String
+   * - `default_energy_mode`
+     - To decide the source of energy forecasts to be used for making optimal time predictions
+     - public_data
+     - public_data / local_prediction
+   * - `enable_energy_caching`
+     - Enables or disables local caching of energy data
+     - false
+     - true/false
+   * - `energy_redis_path`
+     - Path to Redis instance for caching
+     - None
+     - String (Redis URL, redis://localhost:6379 )
+   * - `enable_offline_energy_generation`
+     - To enable storing and periodic update of historical energy in csv files
+     - false
+     - true/false
+   * - `offline_data_dir_path`
+     - Path to the folder where historical energy data will be stored
+     - None
+     - String 
+   * - `offline_data_start_date`
+     - The start date from which historical energy data must be downloaded and stored
+     - None
+     - String (`YYYY-mm-dd` format) 
+
+**Which data is used to predict optimal computation start time ?**
+
+One of the main features of the `codegreen_core` package is the ability to calculate the optimal time for running a computation.  
+This calculation depends on forecasts of hourly energy generation data from renewable and non-renewable sources or time series forecasts of the carbon intensity of future energy production.  
+
+While this data is available for some countries, it is typically only provided for short durations (usually 24 hours or less), which limits the accuracy of optimal time predictions.  
+To address this limitation, we have trained prediction models that generate time series forecasts for longer periods, allowing for more effective optimization.  
+
+This setting is controlled by the `default_energy_mode` option. **By default**, the package uses publicly available energy data. To use the trained prediction models (if available for a specific country), set `default_energy_mode` to `local_prediction`.  
+
+**How to enable caching of recent energy data?**
+
+Certain tools, such as `predict_optimal_time`, rely on recent energy forecasts / predictions. Fetching the same data multiple times can be avoided by intelligently caching it and updating it at regular intervals.  
+Energy data caching can be enabled by setting `enable_energy_caching` to `true`.  
+
+Additionally, this requires a connection to Redis, which is specified using the `energy_redis_path` setting.  
+When caching is enabled, the package first attempts to connect to Redis before storing or retrieving data.  
+
+Once enabled, two types of data values are stored in the cache for each available country:  
+
+1. **Hourly time series forecasts** for the upcoming hours.  
+2. **Actual energy generation data** for the past 72 hours.
 
 
-Description of the fields in configuration file:
-
-- `ENTSOE_token``: The token required to fetch data from the ENTSO-E portal. Please follow the steps at https://transparency.entsoe.eu to create a free account and obtain an API token.
-- `enable_energy_caching``: (boolean) Indicates whether energy data used for optimal time predictions should be cached.
-- `energy_redis_path``: The path to the Redis server where energy data will be stored. This field is required if caching is enabled using the above option.
+**How to download and use historical energy generation data offline?**
 
 
-Package Organization
----------------------
 
-.. image:: _static/modules.png
-   :alt: modules
-   :width: 400px  
-   :align: center 
+**How to re-train prediction models ?**
+TODO
 
 
-The package is divided into two main sub packages: `data`` and `tools`. (There is also an additional module, `utilities`, which provides helper methods that support other modules.)
-
-The `data` sub package contains methods for fetching energy production data. This package relies on external data sources to retrieve this information, which is then processed to make it usable by other components of the package. For more details and a complete API , see the data module documentation.
-
-The `tools` sub package provides a variety of tools, including:
-
-- Carbon intensity calculator
-- Carbon emission calculator
-- Optimal time-shifting predictor
-- Optimal location-shifting predictor
-
-For more information, refer to the `tools` module documentation.
+Setting up your own web server
+--------------------------------
 
 
-Example : Calculating optimal time for a computational task 
--------------------------------------------------------------
-Assuming all the above steps are done, you can now calculate the optimal starting time for a computations. 
 
-.. code-block:: python
-  
-  from datetime import datetime,timedelta 
-  from codegreen_core.tools.loadshift_time import predict_now
-
-  country_code = "DK"
-  est_runtime_hour = 10
-  est_runtime_min = 0
-  now = datetime.now()
-  hard_finish_date = now + timedelta(days=1)
-  criteria = "percent_renewable"
-  per_renewable = 50 
-
-  time = predict_now(country_code,
-                    est_runtime_hour,
-                    est_runtime_min,
-                    hard_finish_date,
-                    criteria,
-                    per_renewable)
-  # (1728640800.0, <Message.OPTIMAL_TIME: 'OPTIMAL_TIME'>, 76.9090909090909)
-  
+Deploying the web server using the docker image 
+-----------------------------------------------

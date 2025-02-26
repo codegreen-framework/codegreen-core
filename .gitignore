@@ -177,3 +177,4 @@ poetry.lock
 
 codegreen_core/tools/test.py
 codegreen_core/data/test.py
+tests/test_notebook.ipynb

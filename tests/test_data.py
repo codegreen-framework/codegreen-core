@@ -59,7 +59,7 @@ class TestEnergyData:
             #   "note":"this has issues,Hydro Pumped Storage values do not match "
             # },
             {
-                "country": "GR",
+                "country": "FI",
                 "start": datetime(2024, 3, 20),
                 "end": datetime(2024, 3, 24),
                 "dtype": "generation",
@@ -67,7 +67,7 @@ class TestEnergyData:
                 "interval60": True,
             },
             {
-                "country": "GR",
+                "country": "FR",
                 "start": datetime(2024, 1, 25),
                 "end": datetime(2024, 1, 28),
                 "dtype": "generation",
@@ -77,15 +77,15 @@ class TestEnergyData:
         ]
         for case in cases:
             # intervals = int((case["end"].replace(minute=0, second=0, microsecond=0) - case["start"].replace(minute=0, second=0, microsecond=0)).total_seconds() // 3600)
-            # print(intervals)
+            #print(case)
             if case["dtype"] == "generation":
                 d = energy(
                     case["country"],
                     case["start"],
                     case["end"],
-                    case["dtype"],
-                    case["interval60"],
+                    case["dtype"]
                 )
+                #print(d)
                 data = d["data"]
                 data_verify = pd.read_csv(case["file"])
                 data_verify["start_date"] = data_verify["MTU"].str.split(" - ").str[0]
