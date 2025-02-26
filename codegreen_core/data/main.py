@@ -84,7 +84,7 @@ def energy(country, start_time, end_time, type="generation") -> dict:
                 if no, go online 
             """
             offline_data = off.get_offline_data(country,start_time,end_time)
-            if offline_data["available"] is True and offline_data["partial"] is False:
+            if offline_data["available"] is True and offline_data["partial"] is False and offline_data["data"] is not None:
                 # todo fix this if partial get remaining data and merge instead of fetching the complete data
                 return {"data":offline_data["data"],"data_available":True,"error":"None","time_interval":60,"message":"Data from offline source"}
             else:
