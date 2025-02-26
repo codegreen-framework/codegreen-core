@@ -21,7 +21,7 @@ jobs:
         python3 -m pip install poetry --user
     - name: Install dependencies and build the project
       run: |
-        poetry install --no-dev
+        poetry install
         poetry build
     - name: Store the distribution packages
       uses: actions/upload-artifact@v4
@@ -78,7 +78,7 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
       run: >-
         gh release create
-        '${{ github.ref_name }}'
+        'release-${{ github.sha }}'
         --repo '${{ github.repository }}'
         --notes ""
     - name: Upload artifact signatures to GitHub Release

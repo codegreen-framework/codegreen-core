@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "codegreen_core"
-version = "0.0.3"
+version = "0.0.4"
 description = "This package helps you become aware of the carbon footprint of your computation"
 authors = ["Anne Hartebrodt <anne.hartebrodt@fau.de>","Shubh Vardhan Jain <shubh.v.jain@fau.de>"]
 readme = "README.md"
