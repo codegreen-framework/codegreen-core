@@ -21,7 +21,7 @@ jobs:
         python3 -m pip install poetry --user
     - name: Install dependencies and build the project
       run: |
-        poetry install --no-dev
+        poetry install
         poetry build
     - name: Store the distribution packages
       uses: actions/upload-artifact@v4
