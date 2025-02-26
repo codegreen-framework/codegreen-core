@@ -11,13 +11,7 @@ from . import entsoe as et
 from ..utilities.log import log_stuff
 
 
-def get_redis_client(redis_url):
-    """
-    Returns a Redis client instance using a Redis URL.
-
-    :param redis_url: Redis connection URL (e.g., "redis://localhost:6379/0")
-    :return: Redis client instance
-    """
+def _get_redis_client(redis_url):
     try:
         return redis.from_url(redis_url, decode_responses=True)
     except redis.RedisError as e:
@@ -25,15 +19,8 @@ def get_redis_client(redis_url):
         return None
     
 
-def get_key_from_redis(redis_url, key):
-    """
-    Retrieves a key's value from Redis. Returns None if the key does not exist.
-
-    :param redis_url: Redis connection URL
-    :param key: Key to retrieve from Redis
-    :return: Value of the key or None if key does not exist
-    """
-    client = get_redis_client(redis_url)
+def _get_key_from_redis(redis_url, key):
+    client = _get_redis_client(redis_url)
     if client:
         try:
             return client.get(key)  # Returns None if key does not exist
@@ -42,59 +29,39 @@ def get_key_from_redis(redis_url, key):
     return None
 
 
-def set_key_in_redis(redis_url, key, value, expiry=None):
-    """
-    Sets a key-value pair in Redis with an optional expiry time.
-
-    :param redis_url: Redis connection URL
-    :param key: Key to store in Redis
-    :param value: Value to store in Redis
-    :param expiry: Expiry time in seconds (optional)
-    """
-    client = get_redis_client(redis_url)
+def _set_key_in_redis(redis_url, key, value, expiry=None):
+    client = _get_redis_client(redis_url)
     if client:
         try:
             if expiry:
                 client.set(key, value, ex=expiry)  # Set key with expiry
             else:
                 client.set(key, value)  # Set key without expiry
-            # print(f"Key '{key}' set successfully in Redis.")
         except redis.RedisError as e:
             print(f"Redis error: {e}")
-
 
 
 def _get_country_key(country_code):
     """Returns the key name for the given country to be stored in redis cache"""
     return "codegreen_generation_public_data_"+ country_code
 
-def round_to_nearest_hour(dt):
-    """
-    Rounds a given datetime to the nearest hour.
-    """
+def _round_to_nearest_hour(dt):
+    """ Rounds a given datetime to the nearest hour."""
     return dt.replace(minute=0, second=0, microsecond=0) 
 
-def get_time_range(nHours):
-    """
-    Returns a tuple (start_date, end_date) where:
-    - start_date is current datetime minus nHours
-    - end_date is the current datetime
-    """
-    end_date = round_to_nearest_hour(datetime.now().replace(microsecond=0))
+def _get_time_range(nHours):
+    """ Returns a tuple (start_date, end_date) where:  start_date is current datetime minus nHours,  end_date is the current datetime """
+    end_date = _round_to_nearest_hour(datetime.now().replace(microsecond=0))
     start_date = end_date - timedelta(hours=nHours)
     return start_date, end_date
 
-def gather_energy_data(country, start_time, end_time):
-    """
-    Gets energy data form public energy sources (online) 
-    """
+def _gather_energy_data(country, start_time, end_time):
+    """ Gets energy data form public energy sources (online) """
     energy_data = et.get_actual_production_percentage(country, start_time, end_time,interval60=True)["data"]
     return energy_data
 
-def get_filtered_data(dataframe, start_time, end_time):
-    """
-    Function that returns a tuple (partial: True/False, data: DataFrame/None) 
-    indicating if the data is partially available and the corresponding data.
+def _get_filtered_data(dataframe, start_time, end_time):
+    """Function that returns a tuple (partial: True/False, data: DataFrame/None)  indicating if the data is partially available and the corresponding data.
     """
     if dataframe.empty:
         return (False, None)
@@ -137,12 +104,12 @@ def _sync_offline_file(country):
 
     current_time = datetime.now()
     # storing data from 5 hours from now.
-    end_time =   round_to_nearest_hour(current_time) - timedelta(hours=5)
+    end_time =   _round_to_nearest_hour(current_time) - timedelta(hours=5)
     
     if not (os.path.exists(json_file_path) and os.path.exists(csv_file_path)):
         print("Files do not exist. Gathering new data.")
         try:
-          data = gather_energy_data(country, start_time, end_time)
+          data = _gather_energy_data(country, start_time, end_time)
 
           data.to_csv(csv_file_path, index=False)
           metadata = {
@@ -153,8 +120,8 @@ def _sync_offline_file(country):
               "updated_on": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
           }
           with open(json_file_path, "w") as f:
-              print(metadata)
               json.dump(metadata, f, indent=4)
+          log_stuff("Successfully created new offline file for "+country)
           return data
         except Exception as e:
             print(e)
@@ -172,12 +139,12 @@ def _sync_offline_file(country):
         update_required = False
         if start_diff.total_seconds() > 0:
             print("Gathering missing data before current start time.")
-            new_data = gather_energy_data(country, start_time, current_start_time )
+            new_data = _gather_energy_data(country, start_time, current_start_time )
             df = pd.concat([new_data, df], ignore_index=True)
             update_required = True
         if end_diff.total_seconds() > 0:
             print("Gathering missing data after current end time.")
-            new_data = gather_energy_data(country, current_end_time, end_time)
+            new_data = _gather_energy_data(country, current_end_time, end_time)
             #print(new_data)
             df = pd.concat([df, new_data], ignore_index=True)
             update_required = True
@@ -190,11 +157,12 @@ def _sync_offline_file(country):
           metadata["updated_on"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
           with open(json_file_path, "w") as f:
             json.dump(metadata, f, indent=4)
+          log_stuff("Successfully synced offline file for "+country)
         else:
             print("No update required")
     #last_72_hours = end_time - timedelta(hours=72)
     #recent_data = df[pd.to_datetime(df["timestamp"]) >= last_72_hours]
-    log_stuff("Successfully synced offline file for "+country)
+    
 
 def _sync_offline_cache(country):
     # print("syncs offline cache for the given country")
@@ -202,27 +170,26 @@ def _sync_offline_cache(country):
         raise Exception("This method cannot be used to get data since enable_energy_caching option is not enabled")
     
     c_key = _get_country_key(country)
-
-    data = get_key_from_redis(Config.get("energy_redis_path"),c_key)
+    hour_count = int(Config.get("generation_cache_hour")) 
+    quarter_time = hour_count/4
+    data = _get_key_from_redis(Config.get("energy_redis_path"),c_key)
+    update_required = False
+    s,e = _get_time_range(hour_count)
     if data is not None:
-        print("check if updated to the latest")
         metadata = json.loads(data)
-        # print(metadata)
         dataframe = pd.DataFrame.from_dict(metadata["dataframe"])
-        dataframe["startTime"] = pd.to_datetime(dataframe["startTime"])  # Converts to pandas.Timestamp
-        print(dataframe)
-        s,e = get_time_range(72)
+        dataframe["startTime"] = pd.to_datetime(dataframe["startTime"]) 
         last_start_time = pd.to_datetime(dataframe.iloc[-1]["startTime"])
-
         # Calculate the difference in hours
         time_difference = abs((e - last_start_time).total_seconds()) / 3600
-        print(last_start_time)
-        print(e)
-        print(time_difference)
+        if quarter_time <= time_difference :
+            update_required = True           
     else:
-        print("new_data_to_add")
-        s,e = get_time_range(72)
-        dataframe = gather_energy_data(country,s,e)
+        update_required = True
+        
+    if update_required  :
+        # todo  :  see if offline data have the required data 
+        dataframe = _gather_energy_data(country,s,e)
         dataframe["startTime"] = pd.to_datetime(dataframe["startTime"])
         dataframe["startTime"] = dataframe["startTime"].dt.tz_localize(None)
         metadata = {
@@ -233,8 +200,7 @@ def _sync_offline_cache(country):
             "updated_on": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "dataframe":dataframe.to_dict()
           }
-        set_key_in_redis(Config.get("energy_redis_path"),c_key,json.dumps(metadata, default=str))
-
+        _set_key_in_redis(Config.get("energy_redis_path"),c_key,json.dumps(metadata, default=str))
 
 
 def _get_offline_file_data(country,start_time, end_time):
@@ -258,25 +224,24 @@ def _get_offline_file_data(country,start_time, end_time):
         return (False, None)
     
     local_data = pd.read_csv(csv_file_path)
-    return get_filtered_data(local_data, start_time, end_time)
+    return _get_filtered_data(local_data, start_time, end_time)
 
 
 def _get_offline_cache_data(country,start,end):
     print("offline cache data")
     if not Config.get("enable_energy_caching"):
         raise Exception("This method cannot be used to get data since enable_energy_caching option is not enabled")
-    data = get_key_from_redis(Config.get("energy_redis_path"),_get_country_key(country))
+    data = _get_key_from_redis(Config.get("energy_redis_path"),_get_country_key(country))
     # print(data)
     if data is not None:
         metadata = json.loads(data)
         # print(metadata)
         dataframe = pd.DataFrame.from_dict(metadata["dataframe"])
         dataframe["startTime"] = pd.to_datetime(dataframe["startTime"])  # Converts to pandas.Timestamp
-        return get_filtered_data(dataframe, start, end)
+        return _get_filtered_data(dataframe, start, end)
     else:
         return False,None
         
-    
 
 def get_offline_data(country,start,end,sync_first=False):
     """
@@ -288,7 +253,7 @@ def get_offline_data(country,start,end,sync_first=False):
     returns {available:True/False, data:dataframe}
     Note that this method assumes that syncing of the sources is being handled separately  
     """
-    output = {"available":False,"data":None, "partial":False}
+    output = {"available":False,"data":None, "partial":False,"source":""}
     offline = Config.get("enable_offline_energy_generation")
     cache =  Config.get("enable_energy_caching")
     
@@ -306,6 +271,7 @@ def get_offline_data(country,start,end,sync_first=False):
             output["partial"] = partial
             output["data"] = data
             output["available"] = True
+            output["source"] = "cache"
             print("data from cache")
             return output
         
@@ -318,34 +284,31 @@ def get_offline_data(country,start,end,sync_first=False):
         output["partial"] = partial
         output["data"] = data
         output["available"] = True
+        output["source"] = "offline_file"
         print("just got the data from offline file")
     
     return output
     
 
-def sync_offline_data():
+def sync_offline_data(file=False,cache=False):
     """
     This method syncs offline data for offline sources enabled in the cache. 
     Data is synced for all available countries 
     You need to run this before getting offline data. you can even setup a CRON job to call this method on regular intervals
     """
     c_keys = meta.get_country_metadata()
-    if  Config.get("enable_offline_energy_generation"):
+    if  Config.get("enable_offline_energy_generation") == True  and file == True:
         for key in c_keys:
             try:
                 _sync_offline_file(key)
             except Exception as e:
                 # print(e)
                 log_stuff("Error in syncing offline file for "+key+". Message"+ str(e))
-    if  Config.get("enable_energy_caching"):
+    if  Config.get("enable_energy_caching") == True and cache == True :
         for key in c_keys:
             try:
                 _sync_offline_cache(key)
             except Exception as e:
                 # print(e)
                 log_stuff("Error in syncing offline file for "+key+". Message: "+ str(e))
-    
-
-            
-    
 

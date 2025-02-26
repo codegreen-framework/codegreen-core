@@ -2,11 +2,9 @@ import os
 import configparser
 import redis
 
-
 class ConfigError(Exception):
     """Custom exception for configuration errors."""
     pass
-
 
 class Config:
     config_data = None
@@ -66,6 +64,26 @@ class Config:
             "boolean":False,
             "use":"The start date for offline energy generation download,YYYY-mm-dd format"
         },
+         {
+            "name":"generation_cache_hour",
+            "default":"72",
+            "boolean":False,
+            "use":"Indicate the number of hours in the past the data will be stored in the cache "
+        },
+
+        {
+            "name":"cron_refresh_offline_files_hour",
+            "default":"6",
+            "boolean":False,
+            "use":"time to setup cron for updating offline energy files"
+        },
+        {
+            "name":"cron_refresh_cache_hour",
+            "default":"6",
+            "boolean":False,
+            "use":"time to setup CRON job to update the energy generation cache"
+        },
+
          {
             "name":"enable_logging",
             "default":"False",

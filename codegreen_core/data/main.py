@@ -86,10 +86,11 @@ def energy(country, start_time, end_time, type="generation") -> dict:
             offline_data = off.get_offline_data(country,start_time,end_time)
             if offline_data["available"] is True and offline_data["partial"] is False and offline_data["data"] is not None:
                 # todo fix this if partial get remaining data and merge instead of fetching the complete data
-                return {"data":offline_data["data"],"data_available":True,"error":"None","time_interval":60,"message":"Data from offline source"}
+                return {"data":offline_data["data"],"data_available":True,"error":"None","time_interval":60,"source":offline_data["source"]}
             else:
                 energy_data = et.get_actual_production_percentage(country, start_time, end_time, interval60=True)
                 energy_data["data"] = energy_data["data"]
+                energy_data["source"] = "public_data"
                 return energy_data            
         elif type == "forecast":
             energy_data = et.get_forecast_percent_renewable(country, start_time, end_time)
