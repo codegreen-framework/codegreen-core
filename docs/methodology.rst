@@ -6,7 +6,7 @@ Here we describe how we calcualte stuff
 
 
 ``tools`` Module
-=================
+------------------
 
 This subpackage  provides tools and methods for tasks like calculating the carbon intensity of energy production and calculating the emissions produced due to a computation. 
 

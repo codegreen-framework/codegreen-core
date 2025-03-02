@@ -70,6 +70,31 @@ def predict_now(
     :type criteria: str
     :return: Tuple[timestamp, message, average_percent_renewable]
     :rtype: tuple
+
+    **Example usage**:
+
+    .. code-block:: python
+    
+        from datetime import datetime,timedelta 
+        from codegreen_core.tools.loadshift_time import predict_now
+
+        country_code = "DK"
+        est_runtime_hour = 10
+        est_runtime_min = 0
+        now = datetime.now()
+        hard_finish_date = now + timedelta(days=1)
+        criteria = "percent_renewable"
+        per_renewable = 50 
+
+        time = predict_now(country_code,
+                            est_runtime_hour,
+                            est_runtime_min,
+                            hard_finish_date,
+                            criteria,
+                            per_renewable)
+        # (1728640800.0, <Message.OPTIMAL_TIME: 'OPTIMAL_TIME'>, 76.9090909090909)
+    
+
     """
     if criteria == "percent_renewable":
         try:
