@@ -47,6 +47,8 @@ energy_type = {
     "Biomass": ["Biomass"],
 }
 
+
+
 # helper methods
 
 
@@ -287,6 +289,7 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> d
       - `data_available`: A boolean indicating if data was successfully retrieved.
       - `data`: A pandas DataFrame containing the energy data if available, empty DataFrame if not.
       - `time_interval` : the time interval of the DataFrame
+      - `columns` :  a dict with column description
     :rtype: dict
     """
     try:
@@ -371,6 +374,7 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> d
             "data": _format_energy_data(table),
             "data_available": True,
             "time_interval": duration,
+            "columns":gen_cols_from_data(table)
         }
     except Exception as e:
         # print(e)
@@ -380,7 +384,37 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> d
             "data_available": False,
             "error": e,
             "time_interval": 0,
+            "columns":None
         }
+
+def gen_cols_from_data(df):
+    """generates list of columns for the given energy generation dataframe"""
+    allAddkeys = [
+            "Wind",
+            "Solar",
+            "Nuclear",
+            "Hydroelectricity",
+            "Geothermal",
+            "Natural Gas",
+            "Petroleum",
+            "Coal",
+            "Biomass",
+    ]
+
+    allCols = df.columns.tolist()
+    # find out which columns are present in the data out of all the possible columns in both the categories
+    renPresent = list(set(allCols).intersection(renewableSources))
+    nonRenPresent = list(set(allCols).intersection(nonRenewableSources))
+
+    cols = {
+            "renewable" : renPresent,
+            "nonRenewable": nonRenPresent,
+            "percentage":[]
+        }
+    for ky in allAddkeys:
+            fieldName = ky + "_per"
+            cols["percentage"].append(fieldName)
+    return cols
 
 
 def get_forecast_percent_renewable(

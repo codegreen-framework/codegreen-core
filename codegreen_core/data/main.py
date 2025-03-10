@@ -58,6 +58,7 @@ def energy(country, start_time, end_time, type="generation") -> dict:
         - **data** (*pandas.DataFrame*): The retrieved energy data if available; an empty DataFrame otherwise.
         - **time_interval** (*int*): The time interval of the DataFrame (constant value: ``60``).
         - **source** (*str*): Specifies the origin of the retrieved data. Defaults to ``'public_data'``, indicating it was fetched from an external source. If the offline storage feature is enabled, this value may change if the data is available locally.
+        - **columns** : a dict of columns for renewable and non renewable energy sources in the data
 
     :rtype: dict
 
@@ -99,15 +100,16 @@ def energy(country, start_time, end_time, type="generation") -> dict:
             offline_data = off.get_offline_data(country,start_time,end_time)
             if offline_data["available"] is True and offline_data["partial"] is False and offline_data["data"] is not None:
                 # todo fix this if partial get remaining data and merge instead of fetching the complete data
-                return {"data":offline_data["data"],"data_available":True,"error":"None","time_interval":60,"source":offline_data["source"]}
+                return {"data":offline_data["data"],"data_available":True,"error":"None","time_interval":60,"source":offline_data["source"],"columns":et.gen_cols_from_data(offline_data["data"])}
             else:
                 energy_data = et.get_actual_production_percentage(country, start_time, end_time, interval60=True)
-                energy_data["data"] = energy_data["data"]
+                #energy_data["data"] = energy_data["data"]
                 energy_data["source"] = "public_data"
+                #energy_data["columns"] = 
                 return energy_data            
         elif type == "forecast":
             energy_data = et.get_forecast_percent_renewable(country, start_time, end_time)
-            energy_data["data"] = energy_data["data"]
+            # energy_data["data"] = energy_data["data"]
             return energy_data
     else:
         raise CodegreenDataError(Message.NO_ENERGY_SOURCE)
