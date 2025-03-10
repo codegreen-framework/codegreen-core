@@ -10,54 +10,76 @@ from . import offline as off
 
 def energy(country, start_time, end_time, type="generation") -> dict:
     """
-    Returns hourly time series of energy production mix for a specified country and time range.
+    Returns an hourly time series of the energy production mix for a specified country and time range, 
+    if a valid energy data source is available.
 
-    This method fetches the energy data for the specified country between the specified duration.
-    It checks if a valid energy data source is available. If not, None is returned. Otherwise, the
-    energy data is returned as a pandas DataFrame. The structure of data depends on the energy source.
+    The data is returned as a pandas DataFrame along with additional metadata.  
+    The columns vary depending on the data source. For example, if the source is ENTSOE, 
+    the data includes fields such as "Biomass", "Geothermal", "Hydro Pumped Storage", 
+    "Hydro Run-of-river and Poundage", "Hydro Water Reservoir", etc.
 
-    For example, if the source is ENTSOE, the data contains:
+    However, some fields remain consistent across data sources:
 
-     ========================== ========== ================================================================
-      Column                     type       Description
-     ========================== ========== ================================================================
-      startTimeUTC               object    Start date in UTC (format YYYYMMDDhhmm)
-      startTime                  datetime  Start time in local timezone
-      Biomass                    float64 
-      Fossil Hard coal           float64
-      Geothermal                 float64
-      ....more energy sources    float64
-      **renewableTotal**         float64    The total based on all renewable sources
-      renewableTotalWS           float64    The total production using only Wind and Solar energy sources
-      nonRenewableTotal          float64
-      total                      float64    Total using all energy sources
-      percentRenewable           int64
-      percentRenewableWS         int64      Percentage of energy produced using only wind and solar energy
-      Wind_per                   int64      Percentages of individual energy sources
-      Solar_per                  int64
-      Nuclear_per                int64
-      Hydroelectricity_per       int64
-      Geothermal_per             int64
-      Natural Gas_per            int64
-      Petroleum_per              int64
-      Coal_per                   int64
-      Biomass_per                int64
-     ========================== ========== ================================================================
+    ========================= ========== ================================================================
+    Column                     Type       Description
+    ========================= ========== ================================================================
+    startTimeUTC              object     Start time in UTC (format: YYYYMMDDhhmm)
+    startTime                 datetime   Start time in local timezone
+    renewableTotal            float64    The total production from all renewable sources
+    renewableTotalWS          float64    Total production using only Wind and Solar energy sources
+    nonRenewableTotal         float64    Total production from non-renewable sources
+    total                     float64    Total energy production from all sources
+    percentRenewable          int64      Percentage of total energy from renewable sources
+    percentRenewableWS        int64      Percentage of energy from Wind and Solar only
+    Wind_per                  int64      Percentage contribution from Wind energy
+    Solar_per                 int64      Percentage contribution from Solar energy
+    Nuclear_per               int64      Percentage contribution from Nuclear energy
+    Hydroelectricity_per      int64      Percentage contribution from Hydroelectricity
+    Geothermal_per            int64      Percentage contribution from Geothermal energy
+    Natural Gas_per           int64      Percentage contribution from Natural Gas
+    Petroleum_per             int64      Percentage contribution from Petroleum
+    Coal_per                  int64      Percentage contribution from Coal
+    Biomass_per               int64      Percentage contribution from Biomass
+    ========================= ========== ================================================================
 
-    Note : fields marked bold are calculated based on the data fetched.
+    :param str country: 
+        The 2-letter country code (e.g., "DE" for Germany, "FR" for France, etc.).  
+    :param datetime start_time: 
+        The start date for data retrieval (rounded to the nearest hour).  
+    :param datetime end_time: 
+        The end date for data retrieval (rounded to the nearest hour).  
+    :param str type: 
+        The type of data to retrieve; either 'generation' or 'forecast'. Defaults to 'generation'.  
 
-    :param str country: The 2 alphabet country code.
-    :param datetime start_time: The start date for data retrieval. A Datetime object. Note that this date will be rounded to the nearest hour.
-    :param datetime end_time: The end date for data retrieval. A datetime object. This date is also rounded to the nearest hour.
-    :param str type: The type of data to retrieve; either 'generation' or 'forecast'. Defaults to 'generation'.
-    :param boolean interval60: To fix the time interval of data to 60 minutes. True by default. Only applicable for generation data
+    :return: A dictionary containing the following keys:
 
-    :return: A dictionary containing:
-      - `error`: A string with an error message, empty if no errors.
-      - `data_available`: A boolean indicating if data was successfully retrieved.
-      - `data`: A pandas DataFrame containing the energy data if available, empty DataFrame if not.
-      - `time_interval` : the time interval of the DataFrame 
+        - **error** (*str*): An error message, empty if no errors occurred.
+        - **data_available** (*bool*): Indicates whether data was successfully retrieved.
+        - **data** (*pandas.DataFrame*): The retrieved energy data if available; an empty DataFrame otherwise.
+        - **time_interval** (*int*): The time interval of the DataFrame (constant value: ``60``).
+        - **source** (*str*): Specifies the origin of the retrieved data. Defaults to ``'public_data'``, indicating it was fetched from an external source. If the offline storage feature is enabled, this value may change if the data is available locally.
+        - **columns** : a dict of columns for renewable and non renewable energy sources in the data
+
     :rtype: dict
+
+    **Example Usage:**
+
+    Get generation data for Germany 
+
+    .. code-block:: python
+
+        from datetime import datetime
+        from codegreen_core.data import energy
+        result = energy(country="DE", start_time=datetime(2025, 1, 1), end_time=datetime(2025, 1, 2), type="generation")
+
+    Get forecast data for Norway 
+
+    .. code-block:: python
+
+        from datetime import datetime
+        from codegreen_core.data import energy
+        result = energy(country="NO", start_time=datetime(2025, 1, 1), end_time=datetime(2025, 1, 2), type="forecast")
+    
     """
     if not isinstance(country, str):
         raise ValueError("Invalid country")
@@ -75,27 +97,41 @@ def energy(country, start_time, end_time, type="generation") -> dict:
     e_source = meta.get_country_energy_source(country)
     if e_source == "ENTSOE":
         if type == "generation":
-            """
-            let local_found= false
-            see if caching is enabled, if yes, first check in the cache
-            if not, 
-                check if offline data is enabled
-                if yes, check is data is available locally 
-                if no, go online 
-            """
             offline_data = off.get_offline_data(country,start_time,end_time)
             if offline_data["available"] is True and offline_data["partial"] is False and offline_data["data"] is not None:
                 # todo fix this if partial get remaining data and merge instead of fetching the complete data
-                return {"data":offline_data["data"],"data_available":True,"error":"None","time_interval":60,"source":offline_data["source"]}
+                return {"data":offline_data["data"],"data_available":True,"error":"None","time_interval":60,"source":offline_data["source"],"columns":et.gen_cols_from_data(offline_data["data"])}
             else:
                 energy_data = et.get_actual_production_percentage(country, start_time, end_time, interval60=True)
-                energy_data["data"] = energy_data["data"]
+                #energy_data["data"] = energy_data["data"]
                 energy_data["source"] = "public_data"
+                #energy_data["columns"] = 
                 return energy_data            
         elif type == "forecast":
             energy_data = et.get_forecast_percent_renewable(country, start_time, end_time)
-            energy_data["data"] = energy_data["data"]
+            # energy_data["data"] = energy_data["data"]
             return energy_data
     else:
         raise CodegreenDataError(Message.NO_ENERGY_SOURCE)
     return None
+
+def info()-> list:
+    """
+    Returns a list of countries (in two-letter codes) and energy sources for which data can be fetched using the package.
+    
+    :return: A list of dictionary containing:
+
+      - name of the country
+      - `energy_source` : the publicly available energy data source 
+      - `carbon_intensity_method` : the methodology used to calculate carbon intensity 
+      - `code` : the 2 letter country code 
+    
+    :rtype: list
+    """
+    data = meta.get_country_metadata()
+    data_list = []
+    for key , value in data.items():
+        c = value
+        c["code"]  = key
+        data_list.append(c)
+    return  data_list

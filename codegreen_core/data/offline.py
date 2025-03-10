@@ -243,16 +243,27 @@ def _get_offline_cache_data(country,start,end):
         return False,None
         
 
-def get_offline_data(country,start,end,sync_first=False):
+def get_offline_data(country,start,end,sync_first=False)->dict:
     """
-    This method returns locally stored energy data. 
-    Data is stored in 2 sources : one. Redis cache and second : csv files. 
-    Redis cache contains data only for the last 72 hours from when it was last synced
-    Offline data files can contain data for longer durations.
-    Both these options can be configured in the config file
-    returns {available:True/False, data:dataframe}
-    Note that this method assumes that syncing of the sources is being handled separately  
+    This method returns locally stored energy data.
+
+    Data is stored in two sources:
+
+    1. **Redis cache**: Contains data for a limited number of hours from the last sync.
+    2. **CSV files**: Contain data for longer durations.
+
+    Both storage options can be configured in the configuration file.
+
+    **Note**: Unless you specify the ``sync_first`` flag, the method assumes that syncing of the data sources is handled separately. If ``sync_first`` is set to ``True`` and data files are not initialized in advance, the method may take longer to complete
+
+    :return: A dictionary with the following keys:
+        - **available** (*bool*): Indicates if the data is available.
+        - **data** (*pandas.DataFrame*): The energy data, if available. Otherwise, an empty DataFrame.
+
+    :rtype: dict
+
     """
+
     output = {"available":False,"data":None, "partial":False,"source":""}
     offline = Config.get("enable_offline_energy_generation")
     cache =  Config.get("enable_energy_caching")
@@ -264,7 +275,7 @@ def get_offline_data(country,start,end,sync_first=False):
     if cache :
         # first look in the cache
         if(sync_first):
-            print("will first sync the cache to get the latest data")
+            #print("will first sync the cache to get the latest data")
             _sync_offline_cache(country)
         partial,data = _get_offline_cache_data(country,start,end)   
         if data is not None and partial is False:
@@ -278,23 +289,28 @@ def get_offline_data(country,start,end,sync_first=False):
     if offline:
         # first look if data files are available, if yes, return data 
         if(sync_first):
-            print("will first sync the offline files to get the latest data")
+            #print("will first sync the offline files to get the latest data")
             _sync_offline_file(country)
         partial,data = _get_offline_file_data(country,start,end)
         output["partial"] = partial
         output["data"] = data
         output["available"] = True
         output["source"] = "offline_file"
-        print("just got the data from offline file")
+        #print("just got the data from offline file")
     
     return output
     
 
 def sync_offline_data(file=False,cache=False):
     """
-    This method syncs offline data for offline sources enabled in the cache. 
-    Data is synced for all available countries 
-    You need to run this before getting offline data. you can even setup a CRON job to call this method on regular intervals
+    This method syncs offline data for offline sources enabled in the configuration file. The data is synced for all available countries. 
+    
+    You need to run this method before retrieving offline data. It is also possible to set up a CRON job to call this method at regular intervals to keep data synchronized.
+    
+    The sync operation can take some time, depending on the data size and the selected sync options (file, cache, or both).
+
+    :param bool file: If ``True``, sync data in offline files. Defaults to ``False``.
+    :param bool cache: If ``True``, sync data in the cache. Defaults to ``False``.
     """
     c_keys = meta.get_country_metadata()
     if  Config.get("enable_offline_energy_generation") == True  and file == True:
@@ -302,13 +318,10 @@ def sync_offline_data(file=False,cache=False):
             try:
                 _sync_offline_file(key)
             except Exception as e:
-                # print(e)
                 log_stuff("Error in syncing offline file for "+key+". Message"+ str(e))
     if  Config.get("enable_energy_caching") == True and cache == True :
         for key in c_keys:
             try:
                 _sync_offline_cache(key)
             except Exception as e:
-                # print(e)
                 log_stuff("Error in syncing offline file for "+key+". Message: "+ str(e))
-
