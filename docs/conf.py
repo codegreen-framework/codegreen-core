@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath("../"))  # Adjust the path to your package lo
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "codegreen_core"
-copyright = "2024, Dr. Anne Hartebrodt"
+copyright = "2025, Dr. Anne Hartebrodt"
 author = "Dr. Anne Hartebrodt"
 
 # -- General configuration ---------------------------------------------------
@@ -46,6 +46,7 @@ extensions = [
 
 html_theme = "alabaster"
 html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 
 html_theme_options = {
     "github_user": "codegreen-framework",

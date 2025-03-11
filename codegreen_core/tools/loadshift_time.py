@@ -16,7 +16,6 @@ import traceback
 
 # ========= the main methods  ============
 
-
 def _get_energy_data(country, start, end):
     """
     Get energy data and check if it must be cached based on the options set
@@ -129,7 +128,7 @@ def predict_optimal_time(
     request_time: datetime = None,
 ) -> tuple:
     """
-    Predicts the optimal time window to run a task based in energy data, run time estimates and renewable energy target.
+    Predicts the optimal time window to run a task within the given energy data time frame the run time estimate .
 
     :param energy_data: A DataFrame containing the energy data including startTimeUTC, totalRenewable,total,percent_renewable,posix_timestamp
     :param estimated_runtime_hours: The estimated runtime in hours

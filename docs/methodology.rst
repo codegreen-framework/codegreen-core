@@ -1,23 +1,7 @@
 Methodology
 ============
 
-Here we describe how we calcualte stuff
-
-
-
-``tools`` Module
-------------------
-
-This subpackage  provides tools and methods for tasks like calculating the carbon intensity of energy production and calculating the emissions produced due to a computation. 
-
-Each tool is implemented in a separate module and must be imported individually (See below). 
-
-..
-  Methods vary depending on the type of input (e.g, country name vs energy data) and the output (e.g single value vs time series DataFrame). Most tools  depend on the data from the `data` sub package.
-  As a convention, methods that primarily accept DataFrame as an input (along with other parameters) and return  a DataFrame are prefixed with `_df`. 
-
-
-
+This page describes the working of various tools and how they compute values. 
 
 Carbon Intensity of Energy
 ---------------------------
@@ -52,11 +36,10 @@ One challenge with the carbon intensity calculation is that the values can vary 
 When energy generation data is not available for a country, the average values of Carbon Intensity is used. The source of this data is Carbon Footprint Ltd [8]
 
 
-
 Carbon emission of a job
 -------------------------
 
-**The Methodology for calculating carbon emissions** (Based on [7])
+The Methodology for calculating carbon emissions is based on [7]
 
 Carbon emission of a job depends on 2 factors : Energy consumed by the hardware to run the computation and the emissions generated to produce this energy. The unit used is CO2e or Carbon dioxide equivalent.
 
@@ -73,4 +56,3 @@ Carbon emission of a job depends on 2 factors : Energy consumed by the hardware 
    
 - Emissions related to the production of the energy : represented by the Carbon Intensity of the energy mix during that period. Already implemented above
 - The result is Carbon emission in CO2e
-

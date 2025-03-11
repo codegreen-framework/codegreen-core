@@ -11,11 +11,12 @@ Welcome to codegreen_core's documentation!
    :caption: Contents:
 
    introduction
-   methodology
-   getting_started
-   api
+   features
+   installation
+   setup
+   Tutorial <https://github.com/codegreen-framework/codegreen-core/blob/main/docs/Tutorials.ipynb>
+   api 
    status
+   methodology
    references
    version_history
-
-
