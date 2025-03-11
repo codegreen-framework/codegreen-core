@@ -1,4 +1,4 @@
-[![Run Tests](https://github.com/codegreen-framework/codegreen-core/actions/workflows/test.yml/badge.svg)](https://github.com/codegreen-framework/codegreen-core/actions/workflows/test.yml)
+[![Run Tests](https://github.com/codegreen-framework/codegreen-core/actions/workflows/test.yml/badge.svg)](https://github.com/codegreen-framework/codegreen-core/actions/workflows/test.yml) [![Publish to PyPI](https://github.com/codegreen-framework/codegreen-core/actions/workflows/workflow.yml/badge.svg)](https://github.com/codegreen-framework/codegreen-core/actions/workflows/workflow.yml)
 
 This repository contains the main functionality of the codegreen project. The complete documentation including installation and usage are available on the [documentation website](https://codegreen-framework.github.io/codegreen-core/). 
 
