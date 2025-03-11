@@ -8,6 +8,7 @@ class ConfigError(Exception):
 
 class Config:
     config_data = None
+    config_file_path = None
     section_name = "codegreen"
     all_keys = [
         {
@@ -116,6 +117,7 @@ class Config:
 
         self.config_data = configparser.ConfigParser()
         self.config_data.read(file_path)
+        self.config_file_path = file_path
 
         if self.section_name not in self.config_data:
             self.config_data[self.section_name] = {}
@@ -164,3 +166,8 @@ class Config:
             print("Config not found")
             print(key)
             raise e
+
+    @classmethod
+    def get_config_file_path(self):
+        """Returns the path of the config file"""
+        return self.config_file_path

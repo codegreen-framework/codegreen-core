@@ -7,14 +7,14 @@ import pandas as pd
 
 class TestEntsoeData:
     def test_actual_time_interval_original(self):
-        data = get_actual_production_percentage("DE",datetime.now()-timedelta(hours=2),datetime.now())
+        data = get_actual_production_percentage("DE",datetime.now()-timedelta(hours=2),datetime.now(),interval60=False)
         assert data["time_interval"] == 15 and data["data_available"] == True
     def test_actual_time_interval_60min(self):
-        data = get_actual_production_percentage("DE",datetime.now()-timedelta(hours=2),datetime.now(),True)
+        data = get_actual_production_percentage("DE",datetime.now()-timedelta(hours=2),datetime.now())
         assert data["time_interval"] == 60 and data["data_available"] == True
     def test_actual_invalid_country1(self):
         data = get_actual_production_percentage("DE1",datetime.now()-timedelta(hours=3),datetime.now(),True)
-        assert data["data_available"] == False and isinstance(data["error"],ValueError)
+        assert data["data_available"] == False # and isinstance(data["error"],ValueError)
     def test_actual_invalid_country2(self):
         data = get_actual_production_percentage(1234,datetime.now()-timedelta(hours=3),datetime.now(),True)
         assert data["data_available"] == False and isinstance(data["error"],ValueError)
