@@ -14,6 +14,7 @@ Welcome to codegreen_core's documentation!
    features
    installation
    setup
+   Tutorial <https://github.com/codegreen-framework/codegreen-core/blob/main/docs/Tutorials.ipynb>
    api 
    status
    methodology

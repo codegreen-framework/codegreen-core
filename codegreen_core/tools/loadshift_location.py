@@ -11,10 +11,7 @@ def predict_optimal_location_now(
     percent_renewable: int,
     hard_finish_date: datetime,
 ) -> tuple:
-    """
-    Given a list of countries, returns the best location where a computation can be run based on the input criteria
-    """
-    print()
+    # Given a list of countries, returns the best location where a computation can be run based on the input criteria
     # first get data
     start_time = datetime.now()
     forecast_data = (
@@ -45,9 +42,8 @@ def predict_optimal_location(
     hard_finish_date,
     request_date=None,
 ):
-    """
-    Determines the optimal location and time  to run a computation using  energy data of the selected locations
-    """
+    
+    #Determines the optimal location and time  to run a computation using  energy data of the selected locations
     ## obtain the optimal start time for each country
     best_values = {}
     current_best = -1

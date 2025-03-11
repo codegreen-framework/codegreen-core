@@ -118,13 +118,24 @@ def _calculate_ci_from_energy_mix(energy_mix):
 
 def compute_ci(country: str, start_time: datetime, end_time: datetime) -> pd.DataFrame:
     """
-    Computes carbon intensity data for a given country and time period.
+    Computes the carbon intensity (CI) for a given country and time period.
 
-    If energy data is available, the carbon intensity is calculated from actual energy data for the specified  time range.
-    If energy data is not available for the country, a default carbon intensity value is used instead.
-    The default CI values for all countries are stored in utilities/ci_default_values.csv.
+    This function determines the energy data source for the country. 
+    - If energy data is available (e.g., from ENTSOE), it calculates CI using actual energy data.
+    - If energy data is unavailable, it uses default CI values from `ci_default_values.csv` for the country.
+
+    :param country: The 2 letter country code.
+    :type country: str
+    :param start_time: The start of the time range for which CI is computed.
+    :type start_time: datetime
+    :param end_time: The end of the time range for which CI is computed.
+    :type end_time: datetime
+
+    :returns: A pandas DataFrame containing timestamps (`startTimeUTC`) and corresponding carbon intensity values.
+    :rtype: pd.DataFrame
 
     """
+
     if not isinstance(country, str):
         raise ValueError("Invalid country")
 
@@ -133,6 +144,10 @@ def compute_ci(country: str, start_time: datetime, end_time: datetime) -> pd.Dat
 
     if not isinstance(end_time, datetime):
         raise ValueError("Invalid end_time")
+    
+    if start_time >= end_time:
+        raise ValueError("start_time must be before end_time")
+    
 
     e_source = get_country_energy_source(country)
     if e_source == "ENTSOE":
@@ -190,6 +205,7 @@ def compute_ci_from_energy(
         - `Nuclear` (float): Base carbon intensity value for nuclear energy.
         - `Solar` (float): Base carbon intensity value for solar energy.
         - `Wind` (float): Base carbon intensity value for wind energy.
+    
     """
 
     if not isinstance(energy_data, pd.DataFrame):

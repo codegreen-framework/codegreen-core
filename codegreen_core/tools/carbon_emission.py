@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 
 from .carbon_intensity import compute_ci
 
-
 def compute_ce(
     server: dict,
     start_time: datetime,
@@ -45,7 +44,6 @@ def compute_ce(
     ci_ts = compute_ci(server["country"], start_time, end_time)
     ce_total, ce_df = compute_ce_from_energy(server, ci_ts)
     return ce_total, ce_df
-
 
 def _compute_energy_used(
     runtime_minutes,
