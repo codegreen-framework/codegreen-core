@@ -105,24 +105,31 @@ def _sync_offline_file(country):
     current_time = datetime.now()
     # storing data from 5 hours from now.
     end_time =   _round_to_nearest_hour(current_time) - timedelta(hours=5)
-    
+    print(country)
+    print("Checking for file ",json_file_path)
     if not (os.path.exists(json_file_path) and os.path.exists(csv_file_path)):
         print("Files do not exist. Gathering new data.")
         try:
           data = _gather_energy_data(country, start_time, end_time)
+          if data :   
+            data.to_csv(csv_file_path, index=False)
+            first_start_time1 = data.iloc[0]["startTime"]
+            last_start_time1 = data.iloc[-1]["startTime"]
+            metadata = {
+                "country": country,
+                "first_start_time": int(first_start_time1.timestamp()),
+                "last_start_time": int(last_start_time1.timestamp()),
+                "created_on": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "updated_on": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "message" : f"Data ranges from {first_start_time1.strftime('%Y-%m-%d %H:%M:%S')} to {last_start_time1.strftime('%Y-%m-%d %H:%M:%S')}"
 
-          data.to_csv(csv_file_path, index=False)
-          metadata = {
-              "country": country,
-              "first_start_time": int(data.iloc[0]["startTime"].timestamp()),
-              "last_start_time": int(data.iloc[-1]["startTime"].timestamp()),
-              "created_on": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-              "updated_on": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-          }
-          with open(json_file_path, "w") as f:
-              json.dump(metadata, f, indent=4)
-          log_stuff("Successfully created new offline file for "+country)
-          return data
+            }
+            with open(json_file_path, "w") as f:
+                json.dump(metadata, f, indent=4)
+            log_stuff("Successfully created new offline file for "+country)
+            return data
+          else:
+              print("Data not available") 
         except Exception as e:
             print(e)
     else:
@@ -138,23 +145,34 @@ def _sync_offline_file(country):
         
         update_required = False
         if start_diff.total_seconds() > 0:
-            print("Gathering missing data before current start time.")
+            print("Gathering missing data before current start time in the file.")
             new_data = _gather_energy_data(country, start_time, current_start_time )
             df = pd.concat([new_data, df], ignore_index=True)
             update_required = True
         if end_diff.total_seconds() > 0:
-            print("Gathering missing data after current end time.")
-            new_data = _gather_energy_data(country, current_end_time, end_time)
-            #print(new_data)
-            df = pd.concat([df, new_data], ignore_index=True)
-            update_required = True
+            try:
+                print("Gathering missing data after current end time in the file.")
+                new_data = _gather_energy_data(country, current_end_time, end_time)
+                #print(new_data)
+                if new_data is not None : 
+                    df = pd.concat([df, new_data], ignore_index=True)
+                    update_required = True
+                else : 
+                    print("  No new data available")
+            except Exception as e : 
+                print("Error in fetching current data. This is possibly because there is no new data to fetch.")
+                print(e)
+
         if update_required:
           df["startTime"] = pd.to_datetime(df["startTime"])
           df = df.sort_values(by="startTime")
           df.to_csv(csv_file_path, index=False)
-          metadata["first_start_time"] = int(df.iloc[0]["startTime"].timestamp())
-          metadata["last_start_time"] = int(df.iloc[-1]["startTime"].timestamp())
+          first_start_time = df.iloc[0]["startTime"]
+          last_start_time = df.iloc[-1]["startTime"]
+          metadata["first_start_time"] = int(first_start_time.timestamp())
+          metadata["last_start_time"] = int(last_start_time.timestamp())
           metadata["updated_on"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+          metadata["message"] = f"Data ranges from {first_start_time.strftime('%Y-%m-%d %H:%M:%S')} to {last_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
           with open(json_file_path, "w") as f:
             json.dump(metadata, f, indent=4)
           log_stuff("Successfully synced offline file for "+country)

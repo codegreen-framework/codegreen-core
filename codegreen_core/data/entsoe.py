@@ -67,6 +67,10 @@ def _refine_data(options, data1):
     """
     # calculate the duration of the time series by finding the difference between the
     # first and the second index (which is of the type `datatime``) and convert this into minutes
+    #print(data1)
+    if len(data1) == 1:
+        return {"data": None, "refine_logs": ["Only one record cannot be processed"]}
+
     durationMin = (data1.index[1] - data1.index[0]).total_seconds() / 60
     # initializing the log list
     refine_logs = []
@@ -132,12 +136,19 @@ def _entsoe_get_actual_generation(options={"country": "", "start": "", "end": ""
     utc_start = _convert_local_to_utc(options["start"]) 
     utc_end =   _convert_local_to_utc(options["end"]) 
     client1 = entsoePandas(api_key=_get_API_token())
-    data1 = client1.query_generation(
-        options["country"],
-        start = utc_start ,
-        end = utc_end ,
-        psr_type=None,
-    )
+    try :
+        data1 = client1.query_generation(
+            options["country"],
+            start = utc_start ,
+            end = utc_end ,
+            psr_type=None,
+        )
+    except Exception as e:
+        print("Error in fetching data from ENTSOE")
+        return {
+            "data": None,
+            "duration": 0,
+        }
     # drop columns with actual consumption values (we want actual aggregated generation values)
     columns_to_drop = [col for col in data1.columns if col[1] == "Actual Consumption"]
     data1 = data1.drop(columns=columns_to_drop)
@@ -149,9 +160,13 @@ def _entsoe_get_actual_generation(options={"country": "", "start": "", "end": ""
     # refine the dataframe. see the refine method
     data2 = _refine_data(options, data1)
     refined_data = data2["data"]
-    refined_data = refined_data.reset_index(drop=True)
+    
     # finding the duration of the time series data
-    durationMin = (data1.index[1] - data1.index[0]).total_seconds() / 60
+    if(refined_data is not None):
+        refined_data = refined_data.reset_index(drop=True)
+        durationMin = (data1.index[1] - data1.index[0]).total_seconds() / 60
+    else:
+        durationMin = 0 
     return {
         "data": refined_data,
         "duration": durationMin,
@@ -274,7 +289,7 @@ def _format_energy_data(df):
 # the main methods
 
 
-def get_actual_production_percentage(country, start, end, interval60=False) -> dict:
+def get_actual_production_percentage(country, start, end, interval60=True) -> dict:
     """Returns time series data containing the percentage of energy generated from various sources for the specified country within the selected time period.
     It also includes the percentage of energy from renewable and non renewable sources. The data is fetched from the APIs is subsequently refined.
     To obtain data in 60-minute intervals (if not already available), set 'interval60' to True
@@ -282,7 +297,7 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> d
     :param str country: The 2 alphabet country code.
     :param datetime start: The start date for data retrieval. A Datetime object. Note that this date will be rounded to the nearest hour.
     :param datetime end: The end date for data retrieval. A datetime object. This date is also rounded to the nearest hour.
-    :param boolean interval60: To convert the data into 60 min time interval. False by default 
+    :param boolean interval60: To convert the data into 60 min time interval. True by default 
     :return: A DataFrame containing the hourly energy production mix and percentage of energy generated from renewable and non renewable sources.
     :return: A dictionary containing:
       - `error`: A string with an error message, empty if no errors.
@@ -322,6 +337,15 @@ def get_actual_production_percentage(country, start, end, interval60=False) -> d
         # get actual generation data per production type and convert it into 60 min interval if required
         totalRaw = _entsoe_get_actual_generation(options)
         total = totalRaw["data"]
+        
+        if total is None :
+            # no data to process further 
+            return {
+                "data": None,
+                "data_available": False,
+                "error": "Data is not available"
+            }
+
         duration = totalRaw["duration"]
         if options["interval60"] == True and totalRaw["duration"] != 60.0:
             table = _convert_to_60min_interval(totalRaw)
