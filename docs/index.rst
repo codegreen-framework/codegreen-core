@@ -11,11 +11,11 @@ Welcome to codegreen_core's documentation!
    :caption: Contents:
 
    introduction
-   methodology
-   getting_started
-   api
+   features
+   installation
+   setup
+   api 
    status
+   methodology
    references
    version_history
-
-

@@ -1,0 +1,5 @@
+div.highlight pre {
+  white-space: pre-wrap !important; /* Allows text wrapping */
+  word-wrap: break-word !important; /* Ensures words break if needed */
+  overflow-x: auto; /* Enables scrolling only if necessary */
+}
