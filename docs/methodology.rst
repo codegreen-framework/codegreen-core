@@ -18,18 +18,18 @@ The carbon intensity of the energy powering a system significantly impacts the o
 
 The table below shows the base carbon intensity values of various electricity production sources. These values are adapted from [5]
 
- ============= ============================================================= ======  
-  Type          Average of                                                    mean     
- ============= ============================================================= ====== 
-  coal          Coal—PC                                                       820       
-  natural gas   Gas—Combined Cycle                                            490    
-  biogas        Biomass—co-firing,Biomass—dedicated                            485      
-  geothermal    Geothermal                                                    38    
-  hydropower    Hydropower                                                    24     
-  nuclear       Nuclear                                                       12    
-  solar         Concentrated Solar Power, Solar PV—rooftop,Solar PV—utility   38.6   
-  wind          Wind onshore, Wind offshore                                   11.5   
- ============= ============================================================= ======
+ =============  ===========  
+    Type        Base value     
+ =============  =========== 
+  Coal            820       
+  Natural gas     490      
+  Biogas          485      
+  Geothermal      38       
+  Hydropower      24       
+  Nuclear         12       
+  Solar           38.6    
+  Wind            11.5    
+ ============= ===========
 
 One challenge with the carbon intensity calculation is that the values can vary depending on the methodology used to make the calculation. Thus, we provide CI values calculated using multiple approaches (essentially different base values). These values are included in the DataFrame as different columns. You can also use your own base values. By default, the IPCC values are used.
 
