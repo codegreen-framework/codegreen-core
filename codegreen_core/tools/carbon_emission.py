@@ -12,9 +12,8 @@ def compute_ce(
     runtime_minutes: int,
 ) -> tuple[float, pd.DataFrame]:
     """
-    Calculates the carbon footprint of a job, given its hardware configuration, time, and location.
+    Calculates the carbon footprint of a job, given the server details , start time and runtime.
     This method returns an hourly time series of the carbon emissions.
-
     The methodology is defined in the documentation.
 
     :param server: A dictionary containing the details about the server, including its hardware specifications.
@@ -37,7 +36,7 @@ def compute_ce(
     """
 
     # Round to the nearest hour (in minutes)
-    # base valued taken from http://calculator.green-algorithms.org/
+    # base values taken from http://calculator.green-algorithms.org/
 
     rounded_runtime_minutes = round(runtime_minutes / 60) * 60
     end_time = start_time + timedelta(minutes=rounded_runtime_minutes)

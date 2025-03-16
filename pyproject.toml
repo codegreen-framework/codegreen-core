@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "codegreen_core"
-version = "0.0.6"
+version = "0.0.7"
 description = "This package helps you become aware of the carbon footprint of your computation"
 authors = ["Anne Hartebrodt <anne.hartebrodt@fau.de>","Shubh Vardhan Jain <shubh.v.jain@fau.de>"]
 readme = "README.md"
@@ -23,6 +23,7 @@ pytest = "^8.3.3"
 Sphinx = "^8.1.3"
 black = "^24.10.0"
 jupyter = "^1.1.1"
+python-dotenv = "^1.0.1"
 
 [build-system]
 requires = ["poetry-core"]

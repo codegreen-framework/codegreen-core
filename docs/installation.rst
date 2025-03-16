@@ -13,3 +13,6 @@ Alternatively, you can clone the Git repository and install the package manually
 
   git clone https://github.com/codegreen-framework/codegreen-core.git
   pip install -e  . 
+
+
+Next, head over to the setup guide to configure the package. 
