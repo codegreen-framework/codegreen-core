@@ -111,7 +111,7 @@ def _sync_offline_file(country):
         print("Files do not exist. Gathering new data.")
         try:
           data = _gather_energy_data(country, start_time, end_time)
-          if data :   
+          if not data.empty :   
             data.to_csv(csv_file_path, index=False)
             first_start_time1 = data.iloc[0]["startTime"]
             last_start_time1 = data.iloc[-1]["startTime"]
