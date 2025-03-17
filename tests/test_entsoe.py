@@ -39,7 +39,7 @@ class TestEntsoeData:
 
 
     def test_forecast_time_interval_60(self):
-        data = get_forecast_percent_renewable("DE",datetime.now()-timedelta(hours=2),datetime.now()+timedelta(hours=5))
+        data = get_forecast_percent_renewable("FR",datetime.now()-timedelta(hours=2),datetime.now()+timedelta(hours=5))
         assert data["time_interval"] == 60 and data["data_available"] == True
    
 
