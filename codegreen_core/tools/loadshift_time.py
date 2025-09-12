@@ -1,18 +1,6 @@
 from datetime import datetime, timedelta, timezone
-from dateutil import tz
-import numpy as np
 import pandas as pd
-import pytz
-
-# from greenerai.api.data.utils import Message
-
-# from ..utilities.metadata import check_prediction_model_exists
 from codegreen_core.data import energy
-# from ..models.predict import predicted_energy
-from codegreen_core.utilities.config import Config
-import traceback
-from pathlib import Path
-
 
 def predict_now(
     country: str, 

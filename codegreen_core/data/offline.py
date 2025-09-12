@@ -108,7 +108,7 @@ def _get_cache_data(country: str, start_time: datetime, end_time: datetime, type
     )
     
     # Cache has never been loaded or cache is not up to date (last update was over an hour ago) --> update cache
-    if (cache_end is None) or (timestamp_now - datetime.fromisoformat(json.loads(cache_end)["timestamp"]) > pd.Timedelta(hours=1)):
+    if (cache_end is None) or (timestamp_now - datetime.fromisoformat(json.loads(cache_end)["timestamp"]) > pd.Timedelta(hours=Config.CACHE_UPDATE_HOUR)):
         _sync_offline_cache(country)
     
     if type == "generation":
