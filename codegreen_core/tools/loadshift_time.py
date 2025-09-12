@@ -78,7 +78,7 @@ def predict_now(
         raise ValueError("Hard finish date is in the past!")
 
     if criteria == "percent_renewable":
-        energy_forecast = energy(country, start_time, hard_finish_date, "forecast", save_offline_path)
+        energy_forecast = energy(country, start_time, hard_finish_date, "forecast")
         if not energy_forecast.empty:
             return predict_optimal_time(
                 energy_forecast,

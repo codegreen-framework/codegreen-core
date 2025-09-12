@@ -1,0 +1,67 @@
+{
+  "renewableSources": [
+    "Biomass",
+    "Geothermal",
+    "Hydro Pumped Storage",
+    "Hydro Run-of-river and poundage",
+    "Hydro Water Reservoir",
+    "Marine",
+    "Other renewable",
+    "Solar",
+    "Waste",
+    "Wind Offshore",
+    "Wind Onshore"
+  ],
+  "windSolarOnly": [
+    "Solar",
+    "Wind Offshore",
+    "Wind Onshore"
+  ],
+  "nonRenewableSources": [
+    "Fossil Brown coal/Lignite",
+    "Fossil Coal-derived gas",
+    "Fossil Gas",
+    "Fossil Hard coal",
+    "Fossil Oil",
+    "Fossil Oil shale",
+    "Fossil Peal",
+    "Nuclear",
+    "Other"
+  ],
+  "energy_type": {
+    "Wind": [
+      "Wind Offshore",
+      "Wind Onshore"
+    ],
+    "Solar": [
+      "Solar"
+    ],
+    "Nuclear": [
+      "Nuclear"
+    ],
+    "Hydroelectricity": [
+      "Hydro Pumped Storage",
+      "Hydro Run-of-river and poundage",
+      "Hydro Water Reservoir"
+    ],
+    "Geothermal": [
+      "Geothermal"
+    ],
+    "Natural Gas": [
+      "Fossil Coal-derived gas",
+      "Fossil Gas"
+    ],
+    "Petroleum": [
+      "Fossil Oil",
+      "Fossil Oil shale"
+    ],
+    "Coal": [
+      "Fossil Brown coal/Lignite",
+      "Fossil Hard coal",
+      "Fossil Peal"
+    ],
+    "Biomass": [
+      "Biomass"
+    ]
+  }
+}

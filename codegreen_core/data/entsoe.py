@@ -1,53 +1,14 @@
 import pandas as pd
+import json
+from pathlib import Path
 from datetime import datetime, timezone
 from entsoe import EntsoePandasClient as entsoePandas
-
-import traceback
 
 from codegreen_core.utilities.config import Config
 
 # constant values
-renewableSources = [
-    "Biomass",
-    "Geothermal",
-    "Hydro Pumped Storage",
-    "Hydro Run-of-river and poundage",
-    "Hydro Water Reservoir",
-    "Marine",
-    "Other renewable",
-    "Solar",
-    "Waste",
-    "Wind Offshore",
-    "Wind Onshore",
-]
-windSolarOnly = ["Solar", "Wind Offshore", "Wind Onshore"]
-nonRenewableSources = [
-    "Fossil Brown coal/Lignite",
-    "Fossil Coal-derived gas",
-    "Fossil Gas",
-    "Fossil Hard coal",
-    "Fossil Oil",
-    "Fossil Oil shale",
-    "Fossil Peal",
-    "Nuclear",
-    "Other",
-]
-energy_type = {
-    "Wind": ["Wind Offshore", "Wind Onshore"],
-    "Solar": ["Solar"],
-    "Nuclear": ["Nuclear"],
-    "Hydroelectricity": [
-        "Hydro Pumped Storage",
-        "Hydro Run-of-river and poundage",
-        "Hydro Water Reservoir",
-    ],
-    "Geothermal": ["Geothermal"],
-    "Natural Gas": ["Fossil Coal-derived gas", "Fossil Gas"],
-    "Petroleum": ["Fossil Oil", "Fossil Oil shale"],
-    "Coal": ["Fossil Brown coal/Lignite", "Fossil Hard coal", "Fossil Peal"],
-    "Biomass": ["Biomass"],
-}
-
+with open(Path(__file__).parent / "energy_sources.json", "r") as f:
+    energy_sources = json.load(f)
 
 def _impute_data(entsoe_data: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     """
@@ -134,7 +95,10 @@ def _convert_to_hourly_intervals(entsoe_raw_data: pd.DataFrame) -> pd.DataFrame:
         .sum(numeric_only=True)
     )
 
-    entsoe_data.index = [datetime(date.year, date.month, date.day, hour).astimezone(timezone.utc) for date, hour in zip(entsoe_data["date"], entsoe_data["hour"])]
+    entsoe_data.index = [
+        datetime(date.year, date.month, date.day, hour).astimezone(timezone.utc) 
+        for date, hour in zip(entsoe_data["date"], entsoe_data["hour"])
+    ]
     entsoe_data.drop(columns=["date", "hour"], inplace=True)
 
     return entsoe_data
@@ -255,9 +219,9 @@ def get_entsoe_production_percentage(country: str, start_time: datetime, end_tim
 
     allCols = entsoe_data.columns.tolist()
     # find out which columns are present in the data out of all the possible columns in the defined categories
-    renPresent = list(set(allCols).intersection(renewableSources))
-    renPresentWS = list(set(allCols).intersection(windSolarOnly))
-    nonRenPresent = list(set(allCols).intersection(nonRenewableSources))
+    renPresent = list(set(allCols).intersection(energy_sources["renewableSources"]))
+    renPresentWS = list(set(allCols).intersection(energy_sources["windSolarOnly"]))
+    nonRenPresent = list(set(allCols).intersection(energy_sources["nonRenewableSources"]))
     # find total renewable, total non renewable and total energy values
     entsoe_data["renewableTotal"] = entsoe_data[renPresent].sum(axis=1)
     entsoe_data["renewableTotalWS"] = entsoe_data[renPresentWS].sum(axis=1)
@@ -266,19 +230,19 @@ def get_entsoe_production_percentage(country: str, start_time: datetime, end_tim
     # calculate percent renewable
     entsoe_data["percentRenewable"] = (entsoe_data["renewableTotal"] / entsoe_data["total"]) * 100
     # refine percentage values : replacing missing values with 0 and converting to integer
-    entsoe_data["percentRenewable"] = entsoe_data["percentRenewable"].fillna(0).round().astype(int)
+    entsoe_data["percentRenewable"] = entsoe_data["percentRenewable"].round(decimals=2)
     entsoe_data["percentRenewableWS"] = (entsoe_data["renewableTotalWS"] / entsoe_data["total"]) * 100
-    entsoe_data["percentRenewableWS"] = entsoe_data["percentRenewableWS"].fillna(0).round().astype(int)
+    entsoe_data["percentRenewableWS"] = entsoe_data["percentRenewableWS"].round(decimals=2)
 
     # individual energy source percentage calculation
-    allAddkeys = list(energy_type.keys())
+    allAddkeys = list(energy_sources["energy_type"].keys())
 
     for ky in allAddkeys:
-        keys_available = list(set(allCols).intersection(energy_type[ky]))
+        keys_available = list(set(allCols).intersection(energy_sources["energy_type"][ky]))
         fieldName = ky + "_per"
         entsoe_data[fieldName] = entsoe_data[keys_available].sum(axis=1)
         entsoe_data[fieldName] = (entsoe_data[fieldName] / entsoe_data["total"]) * 100
-        entsoe_data[fieldName] = entsoe_data[fieldName].fillna(0).astype(int)
+        entsoe_data[fieldName] = entsoe_data[fieldName].round(decimals=2)
 
     return entsoe_data
 
@@ -328,7 +292,7 @@ def get_entsoe_forecast_percent_renewable(country: str, start_time: datetime, en
         
     entsoe_wind_solar_data["total"] = entsoe_data["total"]
     entsoe_wind_solar_data["percentRenewable"] = (entsoe_wind_solar_data["totalRenewable"] / entsoe_wind_solar_data["total"]) * 100
-    entsoe_wind_solar_data["percentRenewable"] = entsoe_wind_solar_data["percentRenewable"].fillna(0).round().astype(int)
+    entsoe_wind_solar_data["percentRenewable"] = entsoe_wind_solar_data["percentRenewable"].fillna(0).round(decimals=2)
     # entsoe_wind_solar_data = entsoe_wind_solar_data.rename(columns={"percentRenewable": "percent_renewable"})
 
     return entsoe_wind_solar_data
