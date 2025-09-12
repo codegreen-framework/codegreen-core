@@ -79,11 +79,6 @@ def energy(country: str, start_time: datetime, end_time: datetime, type: str = "
         result = energy(country="NO", start_time=datetime(2025, 1, 1), end_time=datetime(2025, 1, 2), type="forecast")
     
     """
-    ## TODO: ENERGY
-    # TODO: Fix _impute_data: Running average instead of day average
-
-    ## TODO: Carbon intensity
-    # TODO: Compute carbon intensity as post processing of energy -> Remove the one function
     if not isinstance(country, str):
         raise TypeError("country must be a str")
     if not isinstance(start_time, datetime):

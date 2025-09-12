@@ -1,5 +1,6 @@
 import pandas as pd
 import json
+import bisect
 from pathlib import Path
 from datetime import datetime, timezone
 from entsoe import EntsoePandasClient as entsoePandas
@@ -26,8 +27,8 @@ def _impute_data(entsoe_data: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
 
     durationMin = entsoe_data.index.diff().min().total_seconds() / 60
     # initializing the log list
-    refine_logs = []
-    refine_logs.append(
+    impute_logs = []
+    impute_logs.append(
         "Row count : Fetched =  " + str(len(entsoe_data)) + ", duration : " + str(durationMin)
     )
     
@@ -49,29 +50,45 @@ def _impute_data(entsoe_data: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     # Else, we use the average of the entire data
     
     totalAverageValue = entsoe_data.mean().fillna(0).round().astype(int)
+
     for index in missing_indices:
         rows_same_day = entsoe_data[entsoe_data.index.date == index.date()]
         if len(rows_same_day) > 0:
-            avg_val = rows_same_day.mean().fillna(0).round().astype(int)
-            avg_type = "average day value " + str(rows_same_day.index[0].date()) + " "
+            pos = bisect.bisect_left(rows_same_day.index, index)
+
+            previous_index = rows_same_day.index[pos - 1] if pos > 0 else None
+            following_index = (
+                rows_same_day.index[pos] if pos < len(rows_same_day.index) else None    
+            )
+            if previous_index is None:
+                impute_val = rows_same_day.loc[following_index]
+                impute_type = f"using data from {following_index.date()}"
+            elif following_index is None:
+                impute_val = rows_same_day.loc[previous_index]
+                impute_type = f"using data from {previous_index.date()} "
+            else:
+                impute_val = (
+                    rows_same_day.loc[[previous_index, following_index]]
+                    .mean()
+                    .fillna(0)
+                    .round()
+                    .astype(int)
+                )
+                impute_type = f"using data from {previous_index.date()} and {following_index.date()}"
         else:
-            avg_val = totalAverageValue
-            avg_type = "whole data average "
-        refine_logs.append(
-            "Missing value: "
-            + str(index)
-            + "      replaced with "
-            + avg_type
-            + " : "
-            + " ".join(avg_val.astype(str))
+            impute_val = totalAverageValue
+            impute_type = "whole data average "
+        
+        impute_logs.append(
+            f"Missing value: {index} replaced with {impute_type} : {' '.join(impute_val.astype(str))}"
         )
-        new_row = pd.DataFrame([avg_val], columns=entsoe_data.columns, index=[index])
+        new_row = pd.DataFrame([impute_val], columns=entsoe_data.columns, index=[index])
         entsoe_data = pd.concat([entsoe_data, new_row])
     
     # since missing values are concatenated to the dataframe, it is also sorted based on the datetime index
     entsoe_data.sort_index(inplace=True)
 
-    return entsoe_data, refine_logs
+    return entsoe_data, impute_logs
 
 
 def _convert_to_hourly_intervals(entsoe_raw_data: pd.DataFrame) -> pd.DataFrame:
