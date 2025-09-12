@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta, timezone
 import pandas as pd
 from codegreen_core.data import energy
+from codegreen_core.utilities.metadata import get_country_metadata
+from typing import Union, List
 
 def predict_now(
-    country: str, 
+    countries: Union[str, List[str]], 
     estimated_runtime_hours: int, 
     hard_finish_date: datetime, 
     criteria: str = "percent_renewable"
@@ -65,20 +67,33 @@ def predict_now(
     if hard_finish_date <= start_time:
         raise ValueError("Hard finish date is in the past!")
 
-    if criteria == "percent_renewable":
+    if not isinstance(countries, list):
+        countries = [countries]
+
+    available_countries = set(get_country_metadata())
+    if not set(countries).issubset(available_countries):
+        invalid = set(countries) - available_countries
+        raise ValueError(
+            f"Invalid country codes: {', '.join(invalid)}. "
+            "Use info() to see all available countries."
+        )
+
+    results = {}
+    for country in countries:
         energy_forecast = energy(country, start_time, hard_finish_date, "forecast")
         if not energy_forecast.empty:
-            return predict_optimal_time(
-                energy_forecast,
-                estimated_runtime_hours,
+            results[country] = predict_optimal_time(
+                energy_forecast, 
+                estimated_runtime_hours, 
                 hard_finish_date
             )
-        else:
-            raise RuntimeError("No forecast data was available!")
-     
-    elif criteria == "optimal_percent_renewable":
-        pass
-        
+
+    if len(results) == 0:
+        raise RuntimeError("No forecast data was available for any of the given countries")
+    
+    # find best country
+    best_country = max(results, key=lambda k: results[k][1])
+    return best_country, results[best_country]
     
 def predict_optimal_time(
     energy_forecast: pd.DataFrame,

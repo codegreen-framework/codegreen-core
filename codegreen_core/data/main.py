@@ -1,6 +1,5 @@
 import pandas as pd
 from datetime import datetime, timezone, timedelta
-from pathlib import Path
 
 from codegreen_core.data.entsoe import get_entsoe_production_percentage, get_entsoe_forecast_percent_renewable
 from codegreen_core.data.offline import _get_cache_data 
@@ -97,6 +96,14 @@ def energy(country: str, start_time: datetime, end_time: datetime, type: str = "
         raise ValueError("end_time has no timezone information")
     if start_time > end_time:
         raise ValueError("Invalid start time and end time. End time must be greater than start time")
+    
+    available_countries = set(get_country_metadata())
+    if not country in available_countries:
+        raise ValueError(
+            f"Invalid country code: {country}. "
+            "Use info() to see all available countries."
+    )
+
     original_start_tz = start_time.tzinfo
     original_end_tz = end_time.tzinfo
     if original_start_tz != original_end_tz:
@@ -150,4 +157,5 @@ def info()-> list:
         c = value
         c["code"]  = key
         data_list.append(c)
-    return  data_list
+    
+    return data_list
