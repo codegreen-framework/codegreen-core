@@ -13,8 +13,8 @@ class Config:
         if cls.DEFAULT_ENERGY_MODE not in VALID_ENERGY_MODES:
             raise ValueError(f"Config.DEFAULT_ENERGY_MODE: {cls.DEFAULT_ENERGY_MODE} is not valid! Must be one of: {VALID_ENERGY_MODES}")
         
-        if cls.ENABLE_ENERGY_CACHING is True and cls.REDIS_PATH is None:
-            raise ValueError(f"Config.ENABLE_ENERGY_CACHING is enabled but Config.REDIS_PATH is not set")
+        if cls.ENABLE_ENERGY_CACHING is True and cls.REDIS_URL is None:
+            raise ValueError(f"Config.ENABLE_ENERGY_CACHING is enabled but Config.REDIS_URL is not set")
         
         if cls.ENABLE_ENERGY_CACHING is True and cls.GENERATION_CACHE_HOUR <= 0:
             raise ValueError("Config.GENERATION_CACHE_HOUR must be greater than zero")
@@ -40,7 +40,7 @@ class Config:
 
         # Cache section
         cls.ENABLE_ENERGY_CACHING = config.getboolean("Cache", "ENABLE_ENERGY_CACHING", fallback=False) 
-        cls.REDIS_PATH = config.get("Cache", "REDIS_URL", fallback=None) or None
+        cls.REDIS_URL = config.get("Cache", "REDIS_URL", fallback=None) or None
         cls.GENERATION_CACHE_HOUR = config.getint("Cache", "GENERATION_CACHE_HOUR", fallback=72)
         cls.FORECAST_CACHE_HOUR = config.getint("Cache", "FORECAST_CACHE_HOUR", fallback=24)
         cls.CACHE_UPDATE_HOUR = config.getint("Cache", "CACHE_UPDATE_HOUR", fallback=1)

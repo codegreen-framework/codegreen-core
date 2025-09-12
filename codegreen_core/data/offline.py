@@ -103,7 +103,7 @@ def _get_cache_data(country: str, start_time: datetime, end_time: datetime, type
     """
 
     cache_end = _get_data_from_redis(
-        Config.REDIS_PATH,
+        Config.REDIS_URL,
         f"{country}_cache_timestamp"
     )
     
@@ -117,7 +117,7 @@ def _get_cache_data(country: str, start_time: datetime, end_time: datetime, type
         c_key = _get_country_key_forecast(country) 
     
     cache_data = pd.DataFrame.from_dict(json.loads(_get_data_from_redis(
-        Config.REDIS_PATH,
+        Config.REDIS_URL,
         c_key
     ))["dataframe"]).set_index("startTimeUTC")
     cache_data.index = cache_data.index.map(datetime.fromisoformat)
@@ -148,7 +148,7 @@ def _sync_offline_cache(country: str, timestamp_now: datetime = datetime.now(tim
     entsoe_generation_data.reset_index(names="startTimeUTC", inplace=True)
     cache_generation_data = {"dataframe": entsoe_generation_data.to_dict()}
     _set_key_in_redis(
-        Config.REDIS_PATH,
+        Config.REDIS_URL,
         _get_country_key_generation(country),
         json.dumps(cache_generation_data, default=str)
     )
@@ -162,7 +162,7 @@ def _sync_offline_cache(country: str, timestamp_now: datetime = datetime.now(tim
     entsoe_forecast_data.reset_index(names="startTimeUTC", inplace=True)
     cache_forecast_data = {"dataframe": entsoe_forecast_data.to_dict()}
     _set_key_in_redis(
-        Config.REDIS_PATH,
+        Config.REDIS_URL,
         _get_country_key_forecast(country),
         json.dumps(cache_forecast_data, default=str)
     )
@@ -170,7 +170,7 @@ def _sync_offline_cache(country: str, timestamp_now: datetime = datetime.now(tim
     # Save timestamp
     cache_timestamp = {"timestamp": timestamp_now}
     _set_key_in_redis(
-        Config.REDIS_PATH,
+        Config.REDIS_URL,
         f"{country}_cache_timestamp", 
         json.dumps(cache_timestamp, default=str)
     )
