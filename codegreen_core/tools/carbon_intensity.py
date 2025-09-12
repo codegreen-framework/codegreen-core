@@ -1,76 +1,13 @@
+import json
+from pathlib import Path
 import pandas as pd
 from codegreen_core.utilities.metadata import get_country_energy_source, get_default_ci_value
 from codegreen_core.data import energy
 from datetime import datetime
 
-base_carbon_intensity_values = {
-    "codecarbon": {
-        "values": {
-            "Coal": 995,
-            "Petroleum": 816,
-            "Natural Gas": 743,
-            "Geothermal": 38,
-            "Hydroelectricity": 26,
-            "Nuclear": 29,
-            "Solar": 48,
-            "Wind": 26,
-        },
-        "source": "https://mlco2.github.io/codecarbon/methodology.html#carbon-intensity (values in kb/MWh)",
-    },
-    "ipcc_lifecycle_min": {
-        "values": {
-            "Coal": 740,
-            "Natural Gas": 410,
-            "Biomass": 375,
-            "Geothermal": 6,
-            "Hydroelectricity": 1,
-            "Nuclear": 3.7,
-            "Solar": 17.6,
-            "Wind": 7.5,
-        },
-        "source": "https://www.ipcc.ch/site/assets/uploads/2018/02/ipcc_wg3_ar5_annex-iii.pdf#page=7",
-    },
-    "ipcc_lifecycle_mean": {
-        "values": {
-            "Coal": 820,
-            "Biomass": 485,
-            "Natural Gas": 490,
-            "Geothermal": 38,
-            "Hydroelectricity": 24,
-            "Nuclear": 12,
-            "Solar": 38.6,
-            "Wind": 11.5,
-        },
-        "source": "",
-    },
-    "ipcc_lifecycle_max": {
-        "values": {
-            "Coal": 910,
-            "Biomass": 655,
-            "Natural Gas": 650,
-            "Geothermal": 79,
-            "Hydroelectricity": 2200,
-            "Nuclear": 110,
-            "Solar": 101,
-            "Wind": 45.5,
-        },
-        "source": "",
-    },
-    "eu_comm": {
-        "values": {
-            "Coal": 970,  # sold fuels
-            "Petroleum": 790,  # oil
-            "Biomass": 65,
-            "Natural Gas": 425,
-            "Geothermal": 38,
-            "Hydroelectricity": 19,
-            "Nuclear": 24,
-            "Solar": 40,
-            "Wind": 11,
-        },
-        "source": "N. Scarlat, M. Prussi, and M. Padella, 'Quantification of the carbon intensity of electricity produced and used in Europe', Applied Energy, vol. 305, p. 117901, Jan. 2022, doi: 10.1016/j.apenergy.2021.117901.",
-    },
-}
+# constant values
+with open(Path(__file__).parent / "base_carbon_intensity_values.json", "r") as f:
+    base_carbon_intensity_values = json.load(f)
 
 
 def _calculate_weighted_sum(base: dict, weight: dict) -> float:
@@ -116,53 +53,7 @@ def _calculate_ci_from_energy_mix(energy_mix: dict) -> dict[str, float]:
     return values
 
 
-def compute_ci(country: str, start_time: datetime, end_time: datetime) -> pd.DataFrame:
-    """
-    Computes the carbon intensity (CI) for a given country and time period.
-
-    This function determines the energy data source for the country. 
-    - If energy data is available (e.g., from ENTSOE), it calculates CI using actual energy data.
-    - If energy data is unavailable, it uses default CI values from `ci_default_values.csv` for the country.
-
-    :param country: The 2 letter country code.
-    :type country: str
-    :param start_time: The start of the time range for which CI is computed.
-    :type start_time: datetime
-    :param end_time: The end of the time range for which CI is computed.
-    :type end_time: datetime
-
-    :returns: A pandas DataFrame containing timestamps (`startTimeUTC`) and corresponding carbon intensity values.
-    :rtype: pd.DataFrame
-
-    """
-
-    if not isinstance(country, str):
-        raise ValueError("Invalid country")
-
-    if not isinstance(start_time, datetime):
-        raise ValueError("Invalid start_time")
-
-    if not isinstance(end_time, datetime):
-        raise ValueError("Invalid end_time")
-    
-    if start_time >= end_time:
-        raise ValueError("start_time must be before end_time")
-    
-
-    e_source = get_country_energy_source(country)
-    if e_source == "ENTSOE":
-        data = energy(country, start_time, end_time)
-        energy_data = data["data"]
-        ci_values = compute_ci_from_energy(energy_data)
-        return ci_values
-    else:
-        time_series = pd.date_range(start=start_time, end=end_time, freq="H")
-        df = pd.DataFrame(time_series, columns=["startTimeUTC"])
-        df["ci_default"] = get_default_ci_value(country)
-        return df
-
-
-def compute_ci_from_energy(
+def compute_ci(
     energy_data: pd.DataFrame,
     default_method="ci_ipcc_lifecycle_mean",
     base_values: dict = None,
@@ -209,10 +100,10 @@ def compute_ci_from_energy(
     """
 
     if not isinstance(energy_data, pd.DataFrame):
-        raise ValueError("Invalid energy data.")
+        raise TypeError("Invalid energy data.")
 
     if not isinstance(default_method, str):
-        raise ValueError("Invalid default_method")
+        raise TypeError("Invalid default_method")
 
     if base_values:
         energy_data["ci_default"] = energy_data.apply(

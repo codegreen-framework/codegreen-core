@@ -81,7 +81,6 @@ def energy(country: str, start_time: datetime, end_time: datetime, type: str = "
     """
     ## TODO: ENERGY
     # TODO: Fix _impute_data: Running average instead of day average
-    # TODO: Fix get_entsoe_production_percentage fill methode
 
     ## TODO: Carbon intensity
     # TODO: Compute carbon intensity as post processing of energy -> Remove the one function
