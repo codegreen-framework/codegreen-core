@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 
-from .carbon_intensity import compute_ci
+from codegreen_core.tools.carbon_intensity import compute_ci
 
 def compute_ce(
     server: dict,

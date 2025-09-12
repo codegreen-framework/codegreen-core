@@ -1,14 +1,13 @@
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
 
-from ..utilities.message import Message, CodegreenDataError
-from ..utilities import metadata as meta
-from ..utilities.config import Config
+from codegreen_core.data.entsoe import get_entsoe_production_percentage, get_entsoe_forecast_percent_renewable
+from codegreen_core.data.offline import _get_cache_data 
+from codegreen_core.utilities.config import Config
+from codegreen_core.utilities.metadata import get_country_energy_source, get_country_metadata
 
-from . import entsoe as et
-from . import offline as off
-
-def energy(country, start_time, end_time, type="generation") -> dict:
+def energy(country: str, start_time: datetime, end_time: datetime, type: str = "generation") -> pd.DataFrame:
     """
     Returns an hourly time series of the energy production mix for a specified country and time range, 
     if a valid energy data source is available.
@@ -45,9 +44,9 @@ def energy(country, start_time, end_time, type="generation") -> dict:
     :param str country: 
         The 2-letter country code (e.g., "DE" for Germany, "FR" for France, etc.).  
     :param datetime start_time: 
-        The start date for data retrieval (rounded to the nearest hour).  
+        The start date for data retrieval (rounded to the date hour).  
     :param datetime end_time: 
-        The end date for data retrieval (rounded to the nearest hour).  
+        The end date for data retrieval (rounded to the date hour).  
     :param str type: 
         The type of data to retrieve; either 'generation' or 'forecast'. Defaults to 'generation'.  
 
@@ -65,7 +64,6 @@ def energy(country, start_time, end_time, type="generation") -> dict:
     **Example Usage:**
 
     Get generation data for Germany 
-
     .. code-block:: python
 
         from datetime import datetime
@@ -81,39 +79,75 @@ def energy(country, start_time, end_time, type="generation") -> dict:
         result = energy(country="NO", start_time=datetime(2025, 1, 1), end_time=datetime(2025, 1, 2), type="forecast")
     
     """
+    ## TODO: ENERGY
+    # TODO: Improve error messaging
+    # TODO: Add offline saving 
+    # TODO: Check ENTSOE query
+    # DONE: edge case datetime.now() close to 72 hours --> proprage datetime.now from here 
+    # TODO: Fix _impute_data: Running average instead of day average
+    # TODO: Move code from entsoe pull method to entsoe postprocess (generation and forecast)
+    # TODO: Mean vs Sum in _convert_to_hourly_intervals --> Check output type from entsoe
+    # TODO: Constants auslagern 
+    # TODO: Fix get_entsoe_production_percentage fill methode
+    # TODO: Check ENTSOE website vs returned pandas dataframe.
+    # TODO: Change hardcoded values to config values
+
+    ## TODO: PREDICT_NOW
+    # TODO: Change start_time timezone to hard_finish_date timezone.
+
+    ## TODO: Carbon intensity
+    # TODO: Compute carbon intensity as post processing of energy -> Remove the one function
     if not isinstance(country, str):
-        raise ValueError("Invalid country")
+        raise TypeError("country must be a str")
     if not isinstance(start_time, datetime):
-        raise ValueError("Invalid start date")
+        raise TypeError("start_time must be a datetime")
     if not isinstance(end_time, datetime):
-        raise ValueError("Invalid end date")
+        raise TypeError("end_time must be a datetime")
+    if not isinstance(type, str):
+        raise TypeError("type must be a str")
+   
     if type not in ["generation", "forecast"]:
-        raise ValueError(Message.INVALID_ENERGY_TYPE)
-    # check start<end and both are not same
-
+        raise ValueError("type must be 'generation' or 'forecast'")
+    
+    if start_time.tzinfo is None:
+        raise ValueError("start_time has no timezone information")
+    if end_time.tzinfo is None:
+        raise ValueError("end_time has no timezone information")
     if start_time > end_time:
-        raise ValueError("Invalid time.End time should be greater than start time")
+        raise ValueError("Invalid start time and end time. End time must be greater than start time")
+    original_start_tz = start_time.tzinfo
+    original_end_tz = end_time.tzinfo
+    if original_start_tz != original_end_tz:
+        raise ValueError("Start time and end time use different time zones")
 
-    e_source = meta.get_country_energy_source(country)
+    timestamp_now = datetime.now(timezone.utc) 
+
+    start_time = start_time.replace(minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+    end_time = end_time.replace(minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+    
+    e_source = get_country_energy_source(country)
     if e_source == "ENTSOE":
         if type == "generation":
-            offline_data = off.get_offline_data(country,start_time,end_time)
-            if offline_data["available"] is True and offline_data["partial"] is False and offline_data["data"] is not None:
-                # todo fix this if partial get remaining data and merge instead of fetching the complete data
-                return {"data":offline_data["data"],"data_available":True,"error":"None","time_interval":60,"source":offline_data["source"],"columns":et.gen_cols_from_data(offline_data["data"])}
+            # Only use Cache iff cache is enabled and the request is within the last 72 hours.
+            if Config.ENABLE_ENERGY_CACHING and timestamp_now - start_time <= timedelta(hours=Config.GENERATION_CACHE_HOUR):
+                data = _get_cache_data(country, start_time, end_time, type, timestamp_now)
             else:
-                energy_data = et.get_actual_production_percentage(country, start_time, end_time, interval60=True)
-                #energy_data["data"] = energy_data["data"]
-                energy_data["source"] = "public_data"
-                #energy_data["columns"] = 
-                return energy_data            
+                data = get_entsoe_production_percentage(country, start_time, end_time, type)
         elif type == "forecast":
-            energy_data = et.get_forecast_percent_renewable(country, start_time, end_time)
-            # energy_data["data"] = energy_data["data"]
-            return energy_data
+            # Only use Cache iff cache is enabled and the request is for the next 24 hours.
+            if Config.ENABLE_ENERGY_CACHING and end_time - timestamp_now <= timedelta(hours=Config.FORECAST_CACHE_HOUR):
+                data = _get_cache_data(country, start_time, end_time, type, timestamp_now) 
+            else:
+                data = get_entsoe_forecast_percent_renewable(country, start_time, end_time)
     else:
-        raise CodegreenDataError(Message.NO_ENERGY_SOURCE)
-    return None
+        # raise CodegreenDataError(Message.NO_ENERGY_SOURCE)
+        raise Exception("Error occured")
+    
+    # return to original timezone
+    data.index = data.index.map(lambda x: pd.Timestamp(x).tz_convert(original_start_tz))
+
+    return data
+
 
 def info()-> list:
     """
@@ -128,7 +162,7 @@ def info()-> list:
     
     :rtype: list
     """
-    data = meta.get_country_metadata()
+    data = get_country_metadata()
     data_list = []
     for key , value in data.items():
         c = value

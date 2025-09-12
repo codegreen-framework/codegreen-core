@@ -2,12 +2,15 @@ import json
 import pandas as pd
 from pathlib import Path
 
+from codegreen_core.utilities.config import Config
+
 current_dir = Path(__file__).parent
 
 
-def get_country_metadata():
+def get_country_metadata() -> dict:
     """
-    This method returns the "country_metadata.json" metadata file stored in the data folder.
+    Returns:
+    The metadata stored in the Config 'country_information_path' parameter.
     This file contains a list of countries for which codegreen can fetch the required data to perform further calculations.
     the key is the country code and the value contains
       - country name
@@ -16,20 +19,23 @@ def get_country_metadata():
       - carbon_intensity_method : this is the methodology to be used to calculate the CI values based on the energy fetched
         - the current methodologies supported are described in "carbon_intensity.py" file
     """
-    json_file_path = current_dir / "country_list.json"
-    with open(json_file_path, "r") as json_file:
+    with open(current_dir / "country_information.json", "r") as json_file:
         data = json.load(json_file)
         return data["available"]
 
 
-def get_country_energy_source(country_code):
+def get_country_energy_source(country: str) -> str:
     """
+    Gets the countries energy source.
+    Args:
+        country_code (str): 2 letter country code.
+    Returns:
     Returns the energy source (if available) to gather energy data. These values are stored in the "country_metadata.json" file.
     If the energy source does not exists, None is returned
     """
     metadata = get_country_metadata()
-    if country_code in metadata.keys():
-        return metadata[country_code]["energy_source"]
+    if country in metadata.keys():
+        return metadata[country]["energy_source"]
     else:
         return None
 

@@ -1,6 +1,6 @@
 import pandas as pd
-from ..utilities.metadata import get_country_energy_source, get_default_ci_value
-from ..data import energy
+from codegreen_core.utilities.metadata import get_country_energy_source, get_default_ci_value
+from codegreen_core.data import energy
 from datetime import datetime
 
 base_carbon_intensity_values = {
@@ -73,7 +73,7 @@ base_carbon_intensity_values = {
 }
 
 
-def _calculate_weighted_sum(base, weight):
+def _calculate_weighted_sum(base: dict, weight: dict) -> float:
     """
     Assuming weight are in percentage
     weignt and base are dictionaries with the same keys
@@ -95,7 +95,7 @@ def _calculate_weighted_sum(base, weight):
     )
 
 
-def _calculate_ci_from_energy_mix(energy_mix):
+def _calculate_ci_from_energy_mix(energy_mix: dict) -> dict[str, float]:
     """
     To calculate multiple CI values for a data frame row (for the `apply` method)
     """
@@ -223,7 +223,7 @@ def compute_ci_from_energy(
         ci_values = energy_data.apply(
             lambda row: _calculate_ci_from_energy_mix(row.to_dict()), axis=1
         )
-        ci = pd.DataFrame(ci_values.tolist())
+        ci = pd.DataFrame(ci_values.tolist(), index=ci_values.index)
         ci = pd.concat([ci, energy_data], axis=1)
         ci["ci_default"] = ci[default_method]
         return ci
