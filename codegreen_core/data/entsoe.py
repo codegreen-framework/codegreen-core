@@ -163,21 +163,6 @@ def _entsoe_get_production(country: str, start_time: datetime, end_time: datetim
         )
     except Exception as e:
         raise e("Error in fetching data from ENTSOE.")
-    
-    # drop columns with actual consumption values (we want actual aggregated generation values)
-    columns_to_drop = [col for col in entsoe_data.columns if col[1] == "Actual Consumption"]
-    entsoe_data = entsoe_data.drop(columns=columns_to_drop)
-    # If certain column names are in the format of a tuple like (energy_type, 'Actual Aggregated'),
-    # these column names are transformed into strings using the value of energy_type.
-    entsoe_data.columns = [
-        (col[0] if isinstance(col, tuple) else col) for col in entsoe_data.columns
-    ]
-
-    # Impute missing values
-    entsoe_data, imputation_logs = _impute_data(entsoe_data)
-    
-    # if Config.get("enable_logging"):
-    #     pass
 
     return entsoe_data
 
@@ -195,29 +180,14 @@ def _entsoe_get_total_forecast(country: str, start_time: datetime, end_time: dat
     """
     client = entsoePandas(api_key = Config.ENTSOE_TOKEN)
     try:
-        entsoe_raw_data = client.query_generation_forecast(
+        entsoe_data = client.query_generation_forecast(
             country,
             start = pd.Timestamp(start_time),
             end = pd.Timestamp(end_time) 
         )
     except Exception as e:
         raise e("Error in fetching data from ENTSOE.")
-    # if the data is a series instead of a dataframe, it will be converted to a dataframe
-    if isinstance(entsoe_raw_data, pd.Series):
-        entsoe_raw_data = entsoe_raw_data.to_frame(name = "Actual Aggregated")
-    
-    # refining the data
-    entsoe_data, imputation_log = _impute_data(entsoe_raw_data)
-    
-    # if Config.get("enable_logging"):
-    #     pass
-    
-    # rename the single column
-    entsoe_data.rename(
-        columns = {"Actual Aggregated": "total"}, 
-        inplace=True
-    )
-    # refined_data = refined_data.reset_index(drop=True)
+   
     return entsoe_data
 
 
@@ -235,24 +205,13 @@ def _entsoe_get_wind_solar_forecast(country: str, start_time: datetime, end_time
     client = entsoePandas(api_key = Config.ENTSOE_TOKEN)
     
     try:
-        entsoe_raw_data = client.query_wind_and_solar_forecast(
+        entsoe_data = client.query_wind_and_solar_forecast(
             country,
             start = pd.Timestamp(start_time),
             end = pd.Timestamp(end_time) 
         )
     except Exception as e:
         raise e("Error in fetching data from ENTSOE.")
-    
-    # Impute missing data
-    entsoe_data, imputation_logs = _impute_data(entsoe_raw_data)
-
-    # if Config.get("enable_logging"):
-    #     pass
-
-    # calculating the total renewable consumption value
-    validCols = set(["Solar", "Wind Offshore", "Wind Onshore"])
-    existingCol = list(set(entsoe_data.columns).intersection(validCols))
-    entsoe_data["totalRenewable"] = entsoe_data[existingCol].sum(axis=1)
     
     return entsoe_data
 
@@ -270,16 +229,29 @@ def get_entsoe_production_percentage(country: str, start_time: datetime, end_tim
         A pandas.DataFrame containing the hourly energy production mix and percentage of energy generated from renewable and non renewable sources.
     """
 
-    entsoe_raw_data = _entsoe_get_production(
+    entsoe_data = _entsoe_get_production(
         country,
         start_time,
         end_time
     )
+
+    # drop columns with actual consumption values (we want actual aggregated generation values)
+    columns_to_drop = [col for col in entsoe_data.columns if col[1] == "Actual Consumption"]
+    entsoe_data = entsoe_data.drop(columns=columns_to_drop)
+    # If certain column names are in the format of a tuple like (energy_type, 'Actual Aggregated'),
+    # these column names are transformed into strings using the value of energy_type.
+    entsoe_data.columns = [
+        (col[0] if isinstance(col, tuple) else col) for col in entsoe_data.columns
+    ]
+
+    # Impute missing values
+    entsoe_data, imputation_logs = _impute_data(entsoe_data)
+    
+    # if Config.get("enable_logging"):
+    #     pass
     
     if convert_to_hourly_intervals:
-        entsoe_data = _convert_to_hourly_intervals(entsoe_raw_data)
-    else:
-        entsoe_data = entsoe_raw_data
+        entsoe_data = _convert_to_hourly_intervals(entsoe_data)
 
     allCols = entsoe_data.columns.tolist()
     # find out which columns are present in the data out of all the possible columns in the defined categories
@@ -326,11 +298,31 @@ def get_entsoe_forecast_percent_renewable(country: str, start_time: datetime, en
     :rtype: pandas.DataFrame
     """
     
+    # pulling and postprocessing total forecast
     entsoe_data = _entsoe_get_total_forecast(country, start_time, end_time)
+    # if the data is a series instead of a dataframe, it will be converted to a dataframe
+    if isinstance(entsoe_data, pd.Series):
+        entsoe_data = entsoe_data.to_frame(name = "Actual Aggregated")
+    
+    entsoe_data, imputation_log = _impute_data(entsoe_data)
+    # if Config.get("enable_logging"):
+    #     pass
+    entsoe_data.rename(
+        columns = {"Actual Aggregated": "total"}, 
+        inplace=True
+    )
     if convert_to_hourly_intervals:
         entsoe_data = _convert_to_hourly_intervals(entsoe_data)
     
+    # pulling and postprocessing wind solar forecast
     entsoe_wind_solar_data = _entsoe_get_wind_solar_forecast(country, start_time, end_time)
+    entsoe_wind_solar_data, imputation_logs = _impute_data(entsoe_wind_solar_data)
+    # if Config.get("enable_logging"):
+    #     pass
+    # calculating the total renewable consumption value
+    validCols = set(["Solar", "Wind Offshore", "Wind Onshore"])
+    existingCol = list(set(entsoe_wind_solar_data.columns).intersection(validCols))
+    entsoe_wind_solar_data["totalRenewable"] = entsoe_wind_solar_data[existingCol].sum(axis=1)
     if convert_to_hourly_intervals:
         entsoe_wind_solar_data = _convert_to_hourly_intervals(entsoe_wind_solar_data)
         

@@ -80,17 +80,9 @@ def energy(country: str, start_time: datetime, end_time: datetime, type: str = "
     
     """
     ## TODO: ENERGY
-    # TODO: Improve error messaging
-    # TODO: Add offline saving 
-    # TODO: Check ENTSOE query
-    # DONE: edge case datetime.now() close to 72 hours --> proprage datetime.now from here 
     # TODO: Fix _impute_data: Running average instead of day average
-    # TODO: Move code from entsoe pull method to entsoe postprocess (generation and forecast)
-    # TODO: Mean vs Sum in _convert_to_hourly_intervals --> Check output type from entsoe
     # TODO: Constants auslagern 
     # TODO: Fix get_entsoe_production_percentage fill methode
-    # TODO: Check ENTSOE website vs returned pandas dataframe.
-    # TODO: Change hardcoded values to config values
 
     ## TODO: PREDICT_NOW
     # TODO: Change start_time timezone to hard_finish_date timezone.

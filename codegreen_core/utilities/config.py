@@ -8,14 +8,22 @@ class Config:
     @classmethod
     def validate(cls):
         if cls.ENTSOE_TOKEN is None:
-            raise ValueError("Config.ENTSOE_TOKEN must be set!")
+            raise ValueError("Config.ENTSOE_TOKEN must be set")
 
         if cls.DEFAULT_ENERGY_MODE not in VALID_ENERGY_MODES:
             raise ValueError(f"Config.DEFAULT_ENERGY_MODE: {cls.DEFAULT_ENERGY_MODE} is not valid! Must be one of: {VALID_ENERGY_MODES}")
         
         if cls.ENABLE_ENERGY_CACHING is True and cls.REDIS_PATH is None:
-            raise ValueError(f"Config.ENABLE_ENERGY_CACHING is enabled but Config.REDIS_PATH is not set!")
+            raise ValueError(f"Config.ENABLE_ENERGY_CACHING is enabled but Config.REDIS_PATH is not set")
         
+        if cls.ENABLE_ENERGY_CACHING is True and cls.GENERATION_CACHE_HOUR <= 0:
+            raise ValueError("Config.GENERATION_CACHE_HOUR must be greater than zero")
+        
+        if cls.ENABLE_ENERGY_CACHING is True and cls.FORECAST_CACHE_HOUR <= 0:
+            raise ValueError("Config.FORECAST_CACHE_HOUR must be greater than zero")
+        
+        if cls.ENABLE_ENERGY_CACHING is True and cls.CACHE_UPDATE_HOUR <= 0:
+            raise ValueError("Config.GENERATION_CACHE_HOUR must be greater than zero")
 
     @classmethod
     def load_config(cls, config_path):
@@ -35,6 +43,7 @@ class Config:
         cls.REDIS_PATH = config.get("Cache", "REDIS_URL", fallback=None) or None
         cls.GENERATION_CACHE_HOUR = config.getint("Cache", "GENERATION_CACHE_HOUR", fallback=72)
         cls.FORECAST_CACHE_HOUR = config.getint("Cache", "FORECAST_CACHE_HOUR", fallback=24)
+        cls.CACHE_UPDATE_HOUR = config.getint("Cache", "CACHE_UPDATE_HOUR", fallback=1)
 
         # validate the config
         cls.validate()
