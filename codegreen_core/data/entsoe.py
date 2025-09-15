@@ -109,7 +109,7 @@ def _convert_to_hourly_intervals(entsoe_raw_data: pd.DataFrame) -> pd.DataFrame:
     entsoe_data = (
         entsoe_raw_data
         .groupby(["date", "hour"], as_index=False)
-        .sum(numeric_only=True)
+        .mean(numeric_only=True)
     )
 
     entsoe_data.index = [
