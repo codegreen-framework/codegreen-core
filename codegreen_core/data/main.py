@@ -6,7 +6,7 @@ from codegreen_core.data.offline import _get_cache_data
 from codegreen_core.utilities.config import Config
 from codegreen_core.utilities.metadata import get_country_energy_source, get_country_metadata
 
-def energy(country: str, start_time: datetime, end_time: datetime, type: str = "generation") -> pd.DataFrame:
+def energy(country: str, start_time: datetime, end_time: datetime, type: str = "generation", convert_to_hourly_intervals=True) -> pd.DataFrame:
     """
     Returns an hourly time series of the energy production mix for a specified country and time range, 
     if a valid energy data source is available.
@@ -47,7 +47,9 @@ def energy(country: str, start_time: datetime, end_time: datetime, type: str = "
     :param datetime end_time: 
         The end date for data retrieval (rounded to the date hour).  
     :param str type: 
-        The type of data to retrieve; either 'generation' or 'forecast'. Defaults to 'generation'.  
+        The type of data to retrieve; either 'generation' or 'forecast'. Defaults to 'generation'. 
+    :param bool convert_to_hourly_intervals:
+        If the pulled entsoe data should be converted to hourly intervals. Defaults to True. 
 
     :return: A dictionary containing the following keys:
 
@@ -121,13 +123,13 @@ def energy(country: str, start_time: datetime, end_time: datetime, type: str = "
             if Config.ENABLE_ENERGY_CACHING and timestamp_now - start_time <= timedelta(hours=Config.GENERATION_CACHE_HOUR):
                 data = _get_cache_data(country, start_time, end_time, type, timestamp_now)
             else:
-                data = get_entsoe_production_percentage(country, start_time, end_time, type)
+                data = get_entsoe_production_percentage(country, start_time, end_time, convert_to_hourly_intervals)
         elif type == "forecast":
             # Only use Cache iff cache is enabled and the request is for the next 24 hours.
             if Config.ENABLE_ENERGY_CACHING and end_time - timestamp_now <= timedelta(hours=Config.FORECAST_CACHE_HOUR):
                 data = _get_cache_data(country, start_time, end_time, type, timestamp_now) 
             else:
-                data = get_entsoe_forecast_percent_renewable(country, start_time, end_time)
+                data = get_entsoe_forecast_percent_renewable(country, start_time, end_time, convert_to_hourly_intervals)
     else:
         # raise CodegreenDataError(Message.NO_ENERGY_SOURCE)
         raise Exception("Error occured")

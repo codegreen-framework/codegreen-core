@@ -46,7 +46,7 @@ def _impute_data(entsoe_data: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     
     # Next, we fill in the missing values. 
     # For each absent timestamp, we examine if the entries for the same day exists. 
-    # If they do, we use the day average for each column in the Dataframe. 
+    # If they do, we use the average of the two nearest timestamps. 
     # Else, we use the average of the entire data
     
     totalAverageValue = entsoe_data.mean().fillna(0).round().astype(int)
@@ -132,8 +132,7 @@ def _entsoe_get_production(country: str, start_time: datetime, end_time: datetim
         entsoe_data (pandas.DataFrame): Pulled and imputed Entsoe data.
         imputation_logs (list): Imputation logs.  
     """
-    # print(start_time)
-    # print(end_time)
+
     entsoe_client = entsoePandas(api_key = Config.ENTSOE_TOKEN)
     try :
         entsoe_data = entsoe_client.query_generation(
@@ -184,7 +183,6 @@ def _entsoe_get_wind_solar_forecast(country: str, start_time: datetime, end_time
         imputation_logs (list): Imputation logs.   
     """
     client = entsoePandas(api_key = Config.ENTSOE_TOKEN)
-    
     try:
         entsoe_data = client.query_wind_and_solar_forecast(
             country,
@@ -209,7 +207,6 @@ def get_entsoe_production_percentage(country: str, start_time: datetime, end_tim
     Returns:
         A pandas.DataFrame containing the hourly energy production mix and percentage of energy generated from renewable and non renewable sources.
     """
-
     entsoe_data = _entsoe_get_production(
         country,
         start_time,
